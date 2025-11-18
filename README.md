@@ -13,4 +13,4 @@ To add images:
 * Choose your images and upload them
 
 ## Referencing images in BI tools
-* To obtain the URL to reference your image, open the image on Github, right-click the image and copy the image link
+* Open the image on Github, then right-click on the image and copy the image address. This URL can be used to reference the image in BI tools.
