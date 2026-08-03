@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Markdown Editor</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/@sigmacomputing/plugin@1.2.0/dist/umd/sigmacomputing-plugin.umd.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
+  <script src="https://unpkg.com/marked@15.0.7/marked.min.js"></script>
+
+  <script src="https://unpkg.com/dompurify@3.2.6/dist/purify.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      height: 100%;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      font-size: 14px;
+      color: #24292f;
+      background-color: #ffffff;
+    }
+
+    .container {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+
+    .editor-wrapper {
+      flex: 1;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #editor {
+      flex: 1;
+      overflow-y: auto;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    #editor .ql-editor {
+      min-height: 100%;
+      padding: 16px;
+    }
+
+    .ql-toolbar.ql-snow {
+      border: none;
+      border-bottom: 1px solid #d1d9e0;
+      background: #f6f8fa;
+      padding: 6px 8px;
+    }
+
+    .font-size-input {
+      height: 24px;
+      border: 1px solid #d1d9e0;
+      border-radius: 3px;
+      padding: 0 4px;
+      font-size: 12px;
+      color: #24292f;
+      cursor: pointer;
+    }
+
+    .font-size-input:focus {
+      outline: none;
+      border-color: #2563eb;
+    }
+
+    .ql-container.ql-snow {
+      border: none;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .footer {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 12px;
+      border-top: 1px solid #d1d9e0;
+      background: #f6f8fa;
+    }
+
+    .setup-hint {
+      display: none;
+      padding: 10px 14px;
+      background: #eff6ff;
+      border-top: 1px solid #bfdbfe;
+      font-size: 12px;
+      line-height: 1.5;
+      color: #1e40af;
+    }
+
+    .setup-hint.visible { display: block; }
+
+    .setup-hint strong { font-weight: 600; }
+
+    .save-btn {
+      background-color: #2563eb;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 6px 16px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 0.15s;
+    }
+
+    .save-btn:hover { background-color: #1d4ed8; }
+    .save-btn:active { background-color: #1e40af; }
+    .save-btn:disabled { background-color: #94a3b8; cursor: not-allowed; }
+
+    .refresh-btn {
+      background-color: #f6f8fa;
+      color: #24292f;
+      border: 1px solid #d1d9e0;
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 0.15s;
+    }
+
+    .refresh-btn:hover { background-color: #e8e8e8; }
+    .refresh-btn:active { background-color: #d1d9e0; }
+
+    .status {
+      font-size: 12px;
+      color: #656d76;
+    }
+
+    .status.saved { color: #16a34a; }
+    .status.error { color: #dc2626; }
+
+    .color-picker-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .color-picker-wrapper label {
+      font-size: 11px;
+      color: #656d76;
+      margin-right: 2px;
+    }
+
+    .color-dropdown-wrapper {
+      position: relative;
+    }
+
+    .color-btn {
+      width: 22px;
+      height: 22px;
+      border: 1px solid #d1d9e0;
+      border-radius: 3px;
+      cursor: pointer;
+      padding: 0;
+    }
+
+    .color-grid {
+      position: absolute;
+      bottom: 28px;
+      left: 0;
+      background: #fff;
+      border: 1px solid #d1d9e0;
+      border-radius: 6px;
+      padding: 6px;
+      display: grid;
+      grid-template-columns: repeat(9, 18px);
+      gap: 3px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      z-index: 1000;
+    }
+
+    .cg-swatch {
+      width: 18px;
+      height: 18px;
+      border-radius: 3px;
+      border: 1px solid #d1d9e0;
+      cursor: pointer;
+    }
+
+    .cg-swatch:hover {
+      transform: scale(1.2);
+      border-color: #888;
+    }
+
+    .editor-title {
+      padding: 6px 12px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #24292f;
+      background: #f6f8fa;
+      border-bottom: 1px solid #d1d9e0;
+      display: none;
+      flex-shrink: 0;
+    }
+
+    .editor-title.visible {
+      display: block;
+    }
+
+    .section-bar {
+      padding: 5px 12px;
+      background: #f6f8fa;
+      border-bottom: 1px solid #d1d9e0;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .section-bar label {
+      font-size: 12px;
+      color: #656d76;
+    }
+
+    .section-bar select {
+      font-size: 12px;
+      padding: 2px 6px;
+      border: 1px solid #d1d9e0;
+      border-radius: 3px;
+      color: #24292f;
+    }
+
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div id="editor-title" class="editor-title"></div>
+    <div id="section-bar" class="section-bar" style="display:none;">
+      <label>Section:</label>
+      <select id="section-select"></select>
+    </div>
+    <div class="editor-wrapper">
+      <div id="toolbar">
+        <span class="ql-formats">
+          <select class="ql-header">
+            <option value="1">H1</option>
+            <option value="2">H2</option>
+            <option value="3">H3</option>
+            <option selected>Normal</option>
+          </select>
+        </span>
+        <span class="ql-formats">
+          <button class="ql-bold"></button>
+          <button class="ql-italic"></button>
+          <button class="ql-underline"></button>
+          <button class="ql-strike"></button>
+        </span>
+        <span class="ql-formats">
+          <button class="ql-blockquote"></button>
+          <button class="ql-code-block"></button>
+        </span>
+        <span class="ql-formats">
+          <button class="ql-list" value="ordered"></button>
+          <button class="ql-list" value="bullet"></button>
+        </span>
+        <span class="ql-formats">
+          <button class="ql-align" value=""></button>
+          <button class="ql-align" value="center"></button>
+          <button class="ql-align" value="right"></button>
+        </span>
+        <span class="ql-formats">
+          <button class="ql-link"></button>
+          <button class="ql-image"></button>
+        </span>
+        <span class="ql-formats">
+          <button class="ql-clean"></button>
+        </span>
+      </div>
+      <div id="editor"></div>
+    </div>
+    <div id="setup-hint" class="setup-hint">
+      <strong>Setup required:</strong> To save commentary to a table, bind the <strong>Output Variable</strong> to a text control, then assign an <strong>Insert Record</strong> action to the "On Save Action" trigger. In the action config, map the control variable to the target column in your writeback table. Other columns (metadata) can be mapped to additional controls.
+    </div>
+    <div class="footer">
+      <div class="color-picker-wrapper">
+        <select id="font-size-input" class="font-size-input" title="Font size (px)">
+          <option value="8">8</option>
+          <option value="9">9</option>
+          <option value="10">10</option>
+          <option value="11">11</option>
+          <option value="12">12</option>
+          <option value="14" selected>14</option>
+          <option value="16">16</option>
+          <option value="18">18</option>
+          <option value="20">20</option>
+          <option value="24">24</option>
+          <option value="28">28</option>
+          <option value="32">32</option>
+          <option value="36">36</option>
+          <option value="48">48</option>
+          <option value="64">64</option>
+          <option value="72">72</option>
+        </select>
+        <div class="color-dropdown-wrapper">
+          <button id="color-btn" class="color-btn" title="Text color" style="background:#20004c;"></button>
+          <div id="color-grid" class="color-grid" style="display:none;">
+            <span class="cg-swatch" data-color="#20004c" style="background:#20004c"></span>
+            <span class="cg-swatch" data-color="#5b059c" style="background:#5b059c"></span>
+            <span class="cg-swatch" data-color="#7519f9" style="background:#7519f9"></span>
+            <span class="cg-swatch" data-color="#7d76f2" style="background:#7d76f2"></span>
+            <span class="cg-swatch" data-color="#240691" style="background:#240691"></span>
+            <span class="cg-swatch" data-color="#0f82f4" style="background:#0f82f4"></span>
+            <span class="cg-swatch" data-color="#9ce0f1" style="background:#9ce0f1"></span>
+            <span class="cg-swatch" data-color="#fe8dee" style="background:#fe8dee"></span>
+            <span class="cg-swatch" data-color="#ffc000" style="background:#ffc000"></span>
+            <span class="cg-swatch" data-color="#00b050" style="background:#00b050"></span>
+            <span class="cg-swatch" data-color="#CCEEDF" style="background:#CCEEDF"></span>
+            <span class="cg-swatch" data-color="#66CC9F" style="background:#66CC9F"></span>
+            <span class="cg-swatch" data-color="#00AA60" style="background:#00AA60"></span>
+            <span class="cg-swatch" data-color="#CCF1F3" style="background:#CCF1F3"></span>
+            <span class="cg-swatch" data-color="#7FDDE2" style="background:#7FDDE2"></span>
+            <span class="cg-swatch" data-color="#00BBC5" style="background:#00BBC5"></span>
+            <span class="cg-swatch" data-color="#D9E6FF" style="background:#D9E6FF"></span>
+            <span class="cg-swatch" data-color="#81ABFF" style="background:#81ABFF"></span>
+            <span class="cg-swatch" data-color="#002060" style="background:#002060"></span>
+            <span class="cg-swatch" data-color="#E7E7FF" style="background:#E7E7FF"></span>
+            <span class="cg-swatch" data-color="#B8B8FF" style="background:#B8B8FF"></span>
+            <span class="cg-swatch" data-color="#8888FF" style="background:#8888FF"></span>
+            <span class="cg-swatch" data-color="#E4D7F9" style="background:#E4D7F9"></span>
+            <span class="cg-swatch" data-color="#A67AEB" style="background:#A67AEB"></span>
+            <span class="cg-swatch" data-color="#440099" style="background:#440099"></span>
+            <span class="cg-swatch" data-color="#E8E5ED" style="background:#E8E5ED"></span>
+            <span class="cg-swatch" data-color="#8F7FA6" style="background:#8F7FA6"></span>
+            <span class="cg-swatch" data-color="#1F004E" style="background:#1F004E"></span>
+            <span class="cg-swatch" data-color="#FCC222" style="background:#FCC222"></span>
+            <span class="cg-swatch" data-color="#FDE090" style="background:#FDE090"></span>
+            <span class="cg-swatch" data-color="#FEF2D2" style="background:#FEF2D2"></span>
+            <span class="cg-swatch" data-color="#FF5959" style="background:#FF5959"></span>
+            <span class="cg-swatch" data-color="#FF8A8A" style="background:#FF8A8A"></span>
+            <span class="cg-swatch" data-color="#FFDDDD" style="background:#FFDDDD"></span>
+            <span class="cg-swatch" data-color="#000000" style="background:#000000"></span>
+            <span class="cg-swatch" data-color="#ffffff" style="background:#ffffff"></span>
+          </div>
+        </div>
+        <input type="color" id="custom-color" value="#24292f" title="Pick a color" style="width:20px;height:20px;border:1px solid #d1d9e0;border-radius:3px;padding:0;cursor:pointer;" />
+      </div>
+      <span id="status" class="status"></span>
+      <button id="paste-btn" class="refresh-btn">Paste</button>
+      <button id="refresh-btn" class="refresh-btn">Refresh</button>
+      <button id="clear-btn" class="refresh-btn">Clear</button>
+      <button id="save-btn" class="save-btn" disabled>Save</button>
+    </div>
+  </div>
+
+  <script>
+    const { client } = SigmaPlugin;
+
+    // --- Editor Panel ---
+    var currentMode = 'data';
+
+    function configurePanel(mode) {
+      var panel = [
+        { name: 'inputMode', type: 'radio', values: ['Data Source', 'Blank Document'], singleLine: true, label: 'Input Mode' }
+      ];
+      if (mode === 'data') {
+        panel.push(
+          { name: 'source', type: 'element' },
+          { name: 'markdownColumn', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['text'], label: 'Markdown Column' },
+          { name: 'sectionColumn', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['text'], label: 'Section Column (optional)' },
+          { name: 'hideSection', type: 'checkbox', label: 'Hide Section Selector' }
+        );
+      }
+      panel.push(
+        { name: 'outputVariable', type: 'variable', allowedTypes: ['text'], label: 'Output Variable' },
+        { name: 'onSave', type: 'action-trigger', label: 'On Save Action' },
+        { name: 'editorTitle', type: 'text', label: 'Editor Title' },
+        { name: 'showTitle', type: 'checkbox', label: 'Show Title' }
+      );
+      client.config.configureEditorPanel(panel);
+    }
+
+    configurePanel('data');
+
+    // --- Quill Editor ---
+    // Register custom font size attribute (inline px)
+    var SizeStyle = Quill.import('attributors/style/size');
+    SizeStyle.whitelist = null;
+    Quill.register(SizeStyle, true);
+
+    var AlignStyle = Quill.import('attributors/style/align');
+    Quill.register(AlignStyle, true);
+
+    var quill = new Quill('#editor', {
+      theme: 'snow',
+      modules: {
+        toolbar: {
+          container: '#toolbar'
+        }
+      },
+      placeholder: 'Start writing...'
+    });
+
+    // --- Font Size + Header Mapping ---
+    var fontSizeInput = document.getElementById('font-size-input');
+    var headerSizes = { '1': 32, '2': 24, '3': 20, '': 14 };
+
+    fontSizeInput.addEventListener('change', function () {
+      var size = fontSizeInput.value + 'px';
+      var range = quill.getSelection();
+      if (range && range.length > 0) {
+        quill.formatText(range.index, range.length, 'size', size);
+      } else {
+        quill.format('size', size);
+      }
+      quill.focus();
+    });
+
+    // When header changes, update font size input to match
+    quill.on('selection-change', function () {
+      var format = quill.getFormat();
+      if (format.size) {
+        fontSizeInput.value = parseInt(format.size);
+      } else if (format.header) {
+        fontSizeInput.value = headerSizes[String(format.header)] || 14;
+      } else {
+        fontSizeInput.value = 14;
+      }
+    });
+
+    // Override header toolbar to also apply font size
+    var toolbar = quill.getModule('toolbar');
+    var originalHeaderHandler = toolbar.handlers && toolbar.handlers.header;
+    toolbar.addHandler('header', function (value) {
+      quill.format('header', value);
+      var size = headerSizes[String(value || '')] || 14;
+      fontSizeInput.value = size;
+      quill.format('size', size + 'px');
+    });
+
+
+
+    // --- Text Color ---
+    var colorBtn = document.getElementById('color-btn');
+    var colorGrid = document.getElementById('color-grid');
+    var customColorPicker = document.getElementById('custom-color');
+
+    colorBtn.addEventListener('click', function () {
+      colorGrid.style.display = colorGrid.style.display === 'none' ? 'grid' : 'none';
+    });
+
+    function applyColor(color) {
+      var range = quill.getSelection();
+      if (range && range.length > 0) {
+        quill.formatText(range.index, range.length, 'color', color);
+      } else {
+        quill.format('color', color);
+      }
+      colorBtn.style.background = color;
+      colorGrid.style.display = 'none';
+    }
+
+    document.querySelectorAll('.cg-swatch').forEach(function (swatch) {
+      swatch.addEventListener('click', function () {
+        applyColor(swatch.getAttribute('data-color'));
+        quill.focus();
+      });
+    });
+
+    customColorPicker.addEventListener('input', function () {
+      applyColor(customColorPicker.value);
+    });
+
+    // --- SDK helpers ---
+    function sdkSetVariable(configName, value) {
+      if (typeof client.setVariable === 'function') {
+        client.setVariable(configName, value);
+      } else if (client.config && typeof client.config.setVariable === 'function') {
+        client.config.setVariable(configName, value);
+      } else {
+        client.config.setKey(configName, value);
+      }
+    }
+
+    function sdkTriggerAction(configName) {
+      if (typeof client.triggerAction === 'function') {
+        client.triggerAction(configName);
+      } else if (client.config && typeof client.config.triggerAction === 'function') {
+        client.config.triggerAction(configName);
+      } else {
+        console.warn('triggerAction not available in this SDK version');
+      }
+    }
+
+    // --- State ---
+    var saveBtn = document.getElementById('save-btn');
+    var statusEl = document.getElementById('status');
+    var setupHint = document.getElementById('setup-hint');
+    var outputVarId = null;
+    var onSaveId = null;
+    var unsubData = null;
+    var hasUnsavedChanges = false;
+    var justSaved = false;
+    var isLoading = false;
+    var loadedContent = '';
+
+    function setStatus(msg, type) {
+      statusEl.textContent = msg;
+      statusEl.className = 'status' + (type ? ' ' + type : '');
+    }
+
+    quill.on('text-change', function () {
+      if (isLoading) return;
+      if (!hasUnsavedChanges) {
+        hasUnsavedChanges = true;
+        setStatus('Unsaved changes', '');
+      }
+      saveBtn.disabled = !outputVarId;
+    });
+
+    // --- Save ---
+    saveBtn.addEventListener('click', async function () {
+      if (!outputVarId) return;
+
+      saveBtn.disabled = true;
+      setStatus('Saving...', '');
+
+      try {
+        var html = quill.root.innerHTML;
+
+        sdkSetVariable(outputVarId, html);
+
+        hasUnsavedChanges = false;
+        justSaved = true;
+        loadedContent = html;
+        setStatus('Saved', 'saved');
+
+        if (onSaveId) {
+          // Delay action trigger to prevent Sigma from closing the panel immediately
+          setTimeout(function () {
+            sdkTriggerAction(onSaveId);
+          }, 500);
+        }
+      } catch (err) {
+        console.error('Save error:', err);
+        setStatus('Save failed: ' + err.message, 'error');
+      }
+
+      saveBtn.disabled = false;
+    });
+
+    // --- Paste Button ---
+    var pasteBtn = document.getElementById('paste-btn');
+    pasteBtn.addEventListener('click', async function () {
+      try {
+        var text = await navigator.clipboard.readText();
+        if (text) {
+          var range = quill.getSelection() || { index: quill.getLength() };
+          quill.insertText(range.index, text);
+        }
+      } catch (err) {
+        // Fallback: prompt user for text
+        var input = prompt('Paste your text here:');
+        if (input) {
+          var range = quill.getSelection() || { index: quill.getLength() };
+          quill.insertText(range.index, input);
+        }
+      }
+    });
+
+    // --- Refresh Button ---
+    var refreshBtn = document.getElementById('refresh-btn');
+    var lastReceivedData = null;
+    var lastFullData = null;
+    var forceReload = false;
+
+    refreshBtn.addEventListener('click', function () {
+      justSaved = false;
+      hasUnsavedChanges = false;
+      forceReload = true;
+      // Clear editor
+      isLoading = true;
+      quill.setContents([]);
+      isLoading = false;
+      loadedContent = '';
+      // Load cached data or show status
+      if (lastReceivedData !== null) {
+        loadContent(lastReceivedData);
+        forceReload = false;
+        setStatus('Refreshed', 'saved');
+      } else {
+        setStatus('No data to refresh. Check your data source config.', 'error');
+        forceReload = true;
+      }
+    });
+
+    // --- Clear Button ---
+    var clearBtn = document.getElementById('clear-btn');
+    clearBtn.addEventListener('click', function () {
+      isLoading = true;
+      quill.setContents([]);
+      isLoading = false;
+      loadedContent = '';
+      hasUnsavedChanges = true;
+      setStatus('Unsaved changes', '');
+      saveBtn.disabled = !outputVarId;
+      quill.focus();
+    });
+
+    // --- Load content into editor ---
+    function loadContent(content) {
+      if (!content || !content.trim()) {
+        isLoading = true;
+        quill.setContents([]);
+        isLoading = false;
+        loadedContent = '';
+        hasUnsavedChanges = false;
+        setStatus('', '');
+        return;
+      }
+      loadedContent = content;
+      isLoading = true;
+      var trimmed = content.trim();
+      if (trimmed.startsWith('<')) {
+        // Already Quill HTML — load directly
+        quill.root.innerHTML = content;
+      } else {
+        // Markdown — parse to HTML then use clipboard to convert lists properly
+        var html = DOMPurify.sanitize(marked.parse(content));
+        var delta = quill.clipboard.convert({ html: html });
+        quill.setContents(delta);
+      }
+      isLoading = false;
+      hasUnsavedChanges = false;
+      setStatus('', '');
+    }
+
+    // --- Config Subscription ---
+    client.config.subscribe(function (config) {
+      // Update title
+      var titleEl = document.getElementById('editor-title');
+      if (config.editorTitle && config.showTitle) {
+        titleEl.textContent = config.editorTitle;
+        titleEl.classList.add('visible');
+      } else {
+        titleEl.classList.remove('visible');
+      }
+
+      var mode = config.inputMode === 'Blank Document' ? 'blank' : 'data';
+
+      if (currentMode !== mode) {
+        currentMode = mode;
+        configurePanel(mode);
+      }
+
+      outputVarId = config.outputVariable || null;
+      onSaveId = config.onSave || null;
+      saveBtn.disabled = !outputVarId || !hasUnsavedChanges;
+
+      // Show setup instructions when config is incomplete
+      if (!outputVarId || !onSaveId) {
+        setupHint.classList.add('visible');
+      } else {
+        setupHint.classList.remove('visible');
+      }
+
+      if (unsubData) { unsubData(); unsubData = null; }
+      justSaved = false;
+
+      if (mode === 'data' && config.source && config.markdownColumn) {
+        var sectionBar = document.getElementById('section-bar');
+        var sectionSelect = document.getElementById('section-select');
+        var pluginId = new URLSearchParams(window.location.search).get('id') || 'default';
+        var storageKey = 'sigma-editor-section-' + pluginId;
+        var editorSavedSection = localStorage.getItem(storageKey) || '';
+
+        // Set up section dropdown
+        sectionBar.style.display = config.hideSection ? 'none' : 'flex';
+
+        sectionSelect.onchange = function () {
+          editorSavedSection = sectionSelect.value;
+          localStorage.setItem(storageKey, editorSavedSection);
+          justSaved = false;
+          hasUnsavedChanges = false;
+          if (lastFullData && config.sectionColumn) {
+            var sectionData = lastFullData[config.sectionColumn];
+            var columnData = lastFullData[config.markdownColumn];
+            var selectedSection = sectionSelect.value;
+            if (!selectedSection || !sectionData) return;
+            for (var i = 0; i < sectionData.length; i++) {
+              if (String(sectionData[i]).trim() === selectedSection) {
+                loadContent(columnData[i]);
+                lastReceivedData = columnData[i];
+                return;
+              }
+            }
+          }
+        };
+
+        unsubData = client.elements.subscribeToElementData(config.source, function (data) {
+          lastFullData = data;
+          var columnData = data[config.markdownColumn];
+          if (!columnData || columnData.length === 0) {
+            lastReceivedData = null;
+            if (!hasUnsavedChanges && !justSaved) {
+              isLoading = true;
+              quill.setContents([]);
+              isLoading = false;
+              loadedContent = '';
+              hasUnsavedChanges = false;
+              setStatus('', '');
+            }
+            return;
+          }
+
+          // Section filtering — use the locked saved section
+          var rowIndex = 0;
+          if (config.sectionColumn) {
+            var sectionData = data[config.sectionColumn];
+            if (sectionData) {
+              // Always show all sections in dropdown
+              var uniqueSections = [];
+              for (var i = 0; i < sectionData.length; i++) {
+                var val = String(sectionData[i]).trim();
+                if (val && uniqueSections.indexOf(val) === -1) uniqueSections.push(val);
+              }
+              sectionSelect.innerHTML = '<option value="">-- Select --</option>';
+              uniqueSections.forEach(function (s) {
+                var opt = document.createElement('option');
+                opt.value = s;
+                opt.textContent = s;
+                sectionSelect.appendChild(opt);
+              });
+              // Restore saved selection
+              if (editorSavedSection) sectionSelect.value = editorSavedSection;
+
+              var selectedSection = sectionSelect.value;
+              if (!selectedSection) {
+                setStatus('Select a section above', '');
+                return;
+              }
+
+              // Use the locked section value for filtering
+              rowIndex = -1;
+              for (var i = 0; i < sectionData.length; i++) {
+                if (String(sectionData[i]).trim() === editorSavedSection) {
+                  rowIndex = i;
+                  break;
+                }
+              }
+              if (rowIndex === -1) {
+                lastReceivedData = null;
+                return;
+              }
+            } else {
+              sectionBar.style.display = 'none';
+            }
+          } else {
+            sectionBar.style.display = 'none';
+          }
+
+          var md = columnData[rowIndex];
+          lastReceivedData = md;
+          if (forceReload) {
+            forceReload = false;
+            loadContent(md);
+            return;
+          }
+          if (justSaved) {
+            if (md === loadedContent) {
+              justSaved = false;
+            }
+            return;
+          }
+          if (!hasUnsavedChanges) {
+            loadContent(md);
+          }
+        });
+      }
+    });
+  </script>
+</body>
+</html>

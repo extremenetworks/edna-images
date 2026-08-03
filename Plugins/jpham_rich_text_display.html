@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Markdown Renderer</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/@sigmacomputing/plugin@1.2.0/dist/umd/sigmacomputing-plugin.umd.js"></script>
+  <script src="https://unpkg.com/marked@15.0.7/marked.min.js"></script>
+  <script src="https://unpkg.com/dompurify@3.2.6/dist/purify.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      height: 100%;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      font-size: 14px;
+      color: #24292f;
+      background-color: #ffffff;
+    }
+
+    .container {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+
+    #content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      line-height: 1.2;
+    }
+
+    .placeholder {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      min-height: 80px;
+      color: #656d76;
+      font-size: 13px;
+      text-align: center;
+    }
+
+    #content h1, #content h2, #content h3,
+    #content h4, #content h5, #content h6 {
+      margin-top: 24px;
+      margin-bottom: 16px;
+      font-weight: 600;
+      line-height: 1.25;
+    }
+    #content h1 { font-size: 2em; padding-bottom: 0.3em; border-bottom: 1px solid #d1d9e0; }
+    #content h2 { font-size: 1.5em; padding-bottom: 0.3em; border-bottom: 1px solid #d1d9e0; }
+    #content h3 { font-size: 1.25em; }
+    #content h4 { font-size: 1em; }
+    #content h5 { font-size: 0.875em; }
+    #content h6 { font-size: 0.85em; color: #656d76; }
+    #content p { margin-bottom: 0; }
+    #content a { color: #0969da; text-decoration: none; }
+    #content a:hover { text-decoration: underline; }
+    #content code {
+      padding: 0.2em 0.4em;
+      font-size: 85%;
+      background-color: #f6f8fa;
+      border-radius: 6px;
+      font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    }
+    #content pre {
+      padding: 16px;
+      overflow: auto;
+      font-size: 85%;
+      line-height: 1.45;
+      background-color: #f6f8fa;
+      border-radius: 6px;
+      margin-bottom: 16px;
+    }
+    #content pre code { padding: 0; background: none; border-radius: 0; font-size: 100%; }
+    #content blockquote {
+      padding: 0 1em;
+      color: #656d76;
+      border-left: 0.25em solid #d1d9e0;
+      margin-bottom: 16px;
+    }
+    #content ul, #content ol { padding-left: 2em; margin-bottom: 16px; }
+    #content li { margin-bottom: 4px; padding-left: 1.5em; }
+    #content li + li { margin-top: 4px; }
+    /* Quill list rendering */
+    #content li[data-list] { display: list-item; list-style: none; }
+    #content li .ql-ui { display: none; }
+    #content ol { list-style: none; padding-left: 1.5em; margin-bottom: 16px; counter-reset: list-counter; }
+    #content ol li[data-list="ordered"] { counter-increment: list-counter; }
+    #content ol li[data-list="ordered"]::before { content: counter(list-counter) ". "; font-weight: normal; }
+    #content ol li[data-list="bullet"]::before { content: "\2022  "; }
+    #content table { border-collapse: collapse; width: 100%; margin-bottom: 16px; }
+    #content th, #content td { padding: 6px 13px; border: 1px solid #d1d9e0; }
+    #content th { font-weight: 600; background-color: #f6f8fa; }
+    #content tr:nth-child(2n) { background-color: #f6f8fa; }
+    #content img { max-width: 100%; height: auto; border-radius: 6px; }
+    #content hr { height: 0.25em; padding: 0; margin: 24px 0; background-color: #d1d9e0; border: 0; }
+    #content input[type="checkbox"] { margin-right: 0.5em; }
+
+    .display-title {
+      padding: 6px 12px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #24292f;
+      background: #f6f8fa;
+      border-bottom: 1px solid #d1d9e0;
+      display: none;
+      flex-shrink: 0;
+    }
+
+    .display-title.visible {
+      display: block;
+    }
+
+    .section-bar {
+      padding: 5px 12px;
+      background: #f6f8fa;
+      border-bottom: 1px solid #d1d9e0;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .section-bar label {
+      font-size: 12px;
+      color: #656d76;
+    }
+
+    .section-bar select {
+      font-size: 12px;
+      padding: 2px 6px;
+      border: 1px solid #d1d9e0;
+      border-radius: 3px;
+      color: #24292f;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div id="display-title" class="display-title"></div>
+    <div id="section-bar" class="section-bar" style="display:none;">
+      <label>Section:</label>
+      <select id="section-select"></select>
+    </div>
+    <div id="content">
+      <div class="placeholder">Select a data source to get started.</div>
+    </div>
+  </div>
+
+  <script>
+    const { client } = SigmaPlugin;
+
+    var currentMode = false;
+
+    function configurePanel(useVariable) {
+      var panel = [
+        { name: 'inputMode', type: 'radio', values: ['Data Source', 'Control Variable'], singleLine: true, label: 'Input Mode' }
+      ];
+      if (useVariable) {
+        panel.push(
+          { name: 'variableSource', type: 'element', label: 'Text Control Element' }
+        );
+      } else {
+        panel.push(
+          { name: 'source', type: 'element' },
+          { name: 'markdownColumn', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['text'], label: 'Markdown Column' },
+          { name: 'sectionColumn', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['text'], label: 'Section Column (optional)' },
+          { name: 'hideSection', type: 'checkbox', label: 'Hide Section Selector' }
+        );
+      }
+      panel.push(
+        { name: 'displayTitle', type: 'text', label: 'Display Title' },
+        { name: 'showTitle', type: 'checkbox', label: 'Show Title' }
+      );
+      client.config.configureEditorPanel(panel);
+    }
+
+    configurePanel(false);
+
+    const contentEl = document.getElementById('content');
+
+    // --- Data ---
+    let unsubData = null;
+    var displayPluginId = new URLSearchParams(window.location.search).get('id') || 'default';
+    var displayStorageKey = 'sigma-display-section-' + displayPluginId;
+    var savedSection = localStorage.getItem(displayStorageKey) || '';
+
+    function showPlaceholder(msg) {
+      contentEl.innerHTML = '<div class="placeholder">' + msg + '</div>';
+    }
+
+    function normalizeText(text) {
+      if (text.startsWith('"') && text.endsWith('"')) {
+        try { text = JSON.parse(text); } catch (e) { text = text.slice(1, -1); }
+      }
+      text = text.replace(/\\n/g, '\n');
+      return text;
+    }
+
+    function renderContent(text) {
+      if (!text || !text.trim()) { showPlaceholder('Cell is empty.'); return; }
+      try {
+        var trimmed = text.trim();
+        if (trimmed.startsWith('<')) {
+          // HTML content from the editor — render directly
+          // Use permissive sanitization to preserve Quill's list structure
+          contentEl.innerHTML = DOMPurify.sanitize(trimmed, {
+            ADD_ATTR: ['class', 'style', 'data-list', 'contenteditable'],
+            ALLOW_DATA_ATTR: true,
+            KEEP_CONTENT: true,
+            WHOLE_DOCUMENT: false
+          });
+        } else {
+          // Markdown content — parse first
+          var normalized = normalizeText(text);
+          var html = marked.parse(normalized);
+          contentEl.innerHTML = DOMPurify.sanitize(html);
+        }
+      } catch (err) {
+        console.error('Render error:', err);
+        contentEl.textContent = text;
+      }
+    }
+
+    function unwrapVariable(value) {
+      if (value === null || value === undefined) return null;
+      if (typeof value === 'object') {
+        if (value.value !== undefined) return value.value;
+        if (value.defaultValue?.value !== undefined) return value.defaultValue.value;
+        return null;
+      }
+      return value;
+    }
+
+    function cleanup() {
+      if (unsubData) { unsubData(); unsubData = null; }
+    }
+
+    client.config.subscribe((config) => {
+      // Update title
+      var titleEl = document.getElementById('display-title');
+      if (config.displayTitle && config.showTitle) {
+        titleEl.textContent = config.displayTitle;
+        titleEl.classList.add('visible');
+      } else {
+        titleEl.classList.remove('visible');
+      }
+
+      var useVariable = config.inputMode === 'Control Variable';
+
+      if (currentMode !== useVariable) {
+        currentMode = useVariable;
+        configurePanel(useVariable);
+        return;
+      }
+
+      // Only resubscribe if data source config actually changed
+      var newSourceKey = (useVariable ? 'v:' + (config.variableSource || '') : 's:' + (config.source || '') + ':' + (config.markdownColumn || '') + ':' + (config.sectionColumn || ''));
+      if (typeof window._lastSourceKey === 'undefined') window._lastSourceKey = '';
+
+      // Update section bar visibility without resubscribing
+      var sectionBar = document.getElementById('section-bar');
+      var sectionSelect = document.getElementById('section-select');
+      if (config.sectionColumn) {
+        sectionBar.style.display = config.hideSection ? 'none' : 'flex';
+      }
+
+      if (newSourceKey === window._lastSourceKey && unsubData) {
+        // Source didn't change, just cosmetic update — don't resubscribe
+        return;
+      }
+      window._lastSourceKey = newSourceKey;
+
+      cleanup();
+
+      if (useVariable) {
+        if (!config.variableSource) { showPlaceholder('Select the text control element.'); return; }
+        unsubData = client.elements.subscribeToElementData(config.variableSource, (data) => {
+          var keys = Object.keys(data);
+          if (keys.length === 0) { showPlaceholder('No data from control.'); return; }
+          var firstCol = data[keys[0]];
+          if (!firstCol || firstCol.length === 0) { showPlaceholder('Control is empty.'); return; }
+          renderContent(String(firstCol[0]));
+        });
+      } else {
+        if (!config.source) { showPlaceholder('Select a data source to get started.'); return; }
+        if (!config.markdownColumn) { showPlaceholder('Select a markdown column.'); return; }
+
+        // Re-render when section dropdown changes
+        var lastData = null;
+        sectionSelect.onchange = function () {
+          savedSection = sectionSelect.value;
+          localStorage.setItem(displayStorageKey, savedSection);
+          if (lastData) {
+            var selectedSection = sectionSelect.value;
+            if (!selectedSection) { showPlaceholder('Select a section.'); return; }
+            var sectionData = lastData[config.sectionColumn];
+            var columnData = lastData[config.markdownColumn];
+            var rowIndex = -1;
+            for (var i = 0; i < sectionData.length; i++) {
+              if (String(sectionData[i]).trim() === selectedSection) { rowIndex = i; break; }
+            }
+            if (rowIndex === -1) { showPlaceholder('No data for "' + selectedSection + '".'); return; }
+            renderContent(columnData[rowIndex]);
+          }
+        };
+
+        unsubData = client.elements.subscribeToElementData(config.source, (data) => {
+          lastData = data;
+          var columnData = data[config.markdownColumn];
+          if (!columnData || columnData.length === 0) { showPlaceholder('No data available.'); return; }
+
+          // If section column configured, show dropdown and filter
+          if (config.sectionColumn) {
+            var sectionData = data[config.sectionColumn];
+            if (sectionData) {
+              sectionBar.style.display = config.hideSection ? 'none' : 'flex';
+
+              // Populate dropdown with unique values
+              var uniqueSections = [];
+              for (var i = 0; i < sectionData.length; i++) {
+                var val = String(sectionData[i]).trim();
+                if (val && uniqueSections.indexOf(val) === -1) uniqueSections.push(val);
+              }
+
+              var currentVal = savedSection || sectionSelect.value;
+              sectionSelect.innerHTML = '<option value="">-- Select --</option>';
+              uniqueSections.forEach(function (s) {
+                var opt = document.createElement('option');
+                opt.value = s;
+                opt.textContent = s;
+                sectionSelect.appendChild(opt);
+              });
+              if (currentVal) sectionSelect.value = currentVal;
+              savedSection = sectionSelect.value;
+              localStorage.setItem(displayStorageKey, savedSection);
+
+              var selectedSection = sectionSelect.value;
+              if (!selectedSection) {
+                if (config.hideSection) {
+                  // When hidden and nothing selected, show first section
+                  if (uniqueSections.length > 0) {
+                    sectionSelect.value = uniqueSections[0];
+                    selectedSection = uniqueSections[0];
+                  } else {
+                    showPlaceholder('No sections found.'); return;
+                  }
+                } else {
+                  showPlaceholder('Select a section from the dropdown above.'); return;
+                }
+              }
+
+              var rowIndex = -1;
+              for (var i = 0; i < sectionData.length; i++) {
+                if (String(sectionData[i]).trim() === selectedSection) {
+                  rowIndex = i;
+                  break;
+                }
+              }
+              if (rowIndex === -1) { showPlaceholder('No data for section "' + selectedSection + '".'); return; }
+              renderContent(columnData[rowIndex]);
+            } else {
+              sectionBar.style.display = 'none';
+              renderContent(columnData[0]);
+            }
+          } else {
+            sectionBar.style.display = 'none';
+            renderContent(columnData[0]);
+          }
+        });
+      }
+    });
+  </script>
+</body>
+</html>
