@@ -792,18 +792,15 @@
             return;
           }
           if (justSaved) {
-            // If content matches what we saved, clear flag
-            // If content is completely different (region change), also clear and reload
             if (md === loadedContent) {
               justSaved = false;
               return;
-            } else if (md !== loadedContent) {
+            } else {
               justSaved = false;
-              loadContent(md);
-              return;
             }
           }
-          if (!hasUnsavedChanges) {
+          // Always load if content is different from what's currently shown
+          if (md !== loadedContent) {
             loadContent(md);
           }
         });
