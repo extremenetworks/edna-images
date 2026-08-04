@@ -664,16 +664,6 @@
         setupHint.classList.remove('visible');
       }
 
-      // Only resubscribe if data source config actually changed
-      var newSourceKey = 's:' + (config.source || '') + ':' + (config.markdownColumn || '') + ':' + (config.sectionColumn || '') + ':' + (config.sectionValue || '');
-      if (typeof window._lastEditorSourceKey === 'undefined') window._lastEditorSourceKey = '';
-
-      if (newSourceKey === window._lastEditorSourceKey && unsubData) {
-        // Source didn't change — don't resubscribe (keeps data listener alive)
-        return;
-      }
-      window._lastEditorSourceKey = newSourceKey;
-
       if (unsubData) { unsubData(); unsubData = null; }
       justSaved = false;
 
@@ -732,11 +722,8 @@
               var fixedSection = config.sectionValue ? String(config.sectionValue).trim() : null;
 
               if (fixedSection) {
-                // Section set via config — use fixed value for filtering
-                sectionBar.style.display = config.hideSection ? 'none' : 'flex';
-                // Show the fixed section in the dropdown
-                sectionSelect.innerHTML = '<option value="' + fixedSection + '">' + fixedSection + '</option>';
-                sectionSelect.value = fixedSection;
+                // Section set via config — hide dropdown, use fixed value
+                sectionBar.style.display = 'none';
                 rowIndex = -1;
                 for (var i = 0; i < sectionData.length; i++) {
                   if (String(sectionData[i]).trim() === fixedSection) {
@@ -796,8 +783,20 @@
 
           var md = columnData[rowIndex];
           lastReceivedData = md;
-          // Always load the content
-          loadContent(md);
+          if (forceReload) {
+            forceReload = false;
+            loadContent(md);
+            return;
+          }
+          if (justSaved) {
+            if (md === loadedContent) {
+              justSaved = false;
+            }
+            return;
+          }
+          if (!hasUnsavedChanges) {
+            loadContent(md);
+          }
         });
       }
     });

@@ -323,10 +323,8 @@
               var fixedSection = config.sectionValue ? String(config.sectionValue).trim() : null;
 
               if (fixedSection) {
-                // Section set via config — use fixed value for filtering
-                sectionBar.style.display = config.hideSection ? 'none' : 'flex';
-                sectionSelect.innerHTML = '<option value="' + fixedSection + '">' + fixedSection + '</option>';
-                sectionSelect.value = fixedSection;
+                // Section set via config — hide dropdown, use fixed value
+                sectionBar.style.display = 'none';
                 var rowIndex = -1;
                 for (var i = 0; i < sectionData.length; i++) {
                   if (String(sectionData[i]).trim() === fixedSection) {
