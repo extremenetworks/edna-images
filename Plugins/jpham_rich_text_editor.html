@@ -664,6 +664,16 @@
         setupHint.classList.remove('visible');
       }
 
+      // Only resubscribe if data source config actually changed
+      var newSourceKey = 's:' + (config.source || '') + ':' + (config.markdownColumn || '') + ':' + (config.sectionColumn || '') + ':' + (config.sectionValue || '');
+      if (typeof window._lastEditorSourceKey === 'undefined') window._lastEditorSourceKey = '';
+
+      if (newSourceKey === window._lastEditorSourceKey && unsubData) {
+        // Source didn't change — don't resubscribe (keeps data listener alive)
+        return;
+      }
+      window._lastEditorSourceKey = newSourceKey;
+
       if (unsubData) { unsubData(); unsubData = null; }
       justSaved = false;
 
