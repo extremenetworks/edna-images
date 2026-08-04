@@ -169,6 +169,7 @@
           { name: 'source', type: 'element' },
           { name: 'markdownColumn', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['text'], label: 'Markdown Column' },
           { name: 'sectionColumn', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['text'], label: 'Section Column (optional)' },
+          { name: 'sectionValue', type: 'text', label: 'Section Value' },
           { name: 'hideSection', type: 'checkbox', label: 'Hide Section Selector' }
         );
       }
@@ -314,55 +315,67 @@
           var columnData = data[config.markdownColumn];
           if (!columnData || columnData.length === 0) { showPlaceholder('No data available.'); return; }
 
-          // If section column configured, show dropdown and filter
+          // If section column configured, filter by section
           if (config.sectionColumn) {
             var sectionData = data[config.sectionColumn];
             if (sectionData) {
-              sectionBar.style.display = config.hideSection ? 'none' : 'flex';
+              // Use config sectionValue if set (persists in Sigma), otherwise use dropdown
+              var fixedSection = config.sectionValue ? String(config.sectionValue).trim() : null;
 
-              // Populate dropdown with unique values
-              var uniqueSections = [];
-              for (var i = 0; i < sectionData.length; i++) {
-                var val = String(sectionData[i]).trim();
-                if (val && uniqueSections.indexOf(val) === -1) uniqueSections.push(val);
-              }
+              if (fixedSection) {
+                // Section set via config — hide dropdown, use fixed value
+                sectionBar.style.display = 'none';
+                var rowIndex = -1;
+                for (var i = 0; i < sectionData.length; i++) {
+                  if (String(sectionData[i]).trim() === fixedSection) {
+                    rowIndex = i;
+                    break;
+                  }
+                }
+                if (rowIndex === -1) { showPlaceholder('No data for section "' + fixedSection + '".'); return; }
+                renderContent(columnData[rowIndex]);
+              } else {
+                // No config value — show dropdown for manual selection
+                sectionBar.style.display = config.hideSection ? 'none' : 'flex';
 
-              var currentVal = savedSection || sectionSelect.value;
-              sectionSelect.innerHTML = '<option value="">-- Select --</option>';
-              uniqueSections.forEach(function (s) {
-                var opt = document.createElement('option');
-                opt.value = s;
-                opt.textContent = s;
-                sectionSelect.appendChild(opt);
-              });
-              if (currentVal) sectionSelect.value = currentVal;
-              savedSection = sectionSelect.value;
-              localStorage.setItem(displayStorageKey, savedSection);
+                var uniqueSections = [];
+                for (var i = 0; i < sectionData.length; i++) {
+                  var val = String(sectionData[i]).trim();
+                  if (val && uniqueSections.indexOf(val) === -1) uniqueSections.push(val);
+                }
 
-              var selectedSection = sectionSelect.value;
-              if (!selectedSection) {
-                if (config.hideSection) {
-                  // When hidden and nothing selected, show first section
-                  if (uniqueSections.length > 0) {
+                var currentVal = savedSection || sectionSelect.value;
+                sectionSelect.innerHTML = '<option value="">-- Select --</option>';
+                uniqueSections.forEach(function (s) {
+                  var opt = document.createElement('option');
+                  opt.value = s;
+                  opt.textContent = s;
+                  sectionSelect.appendChild(opt);
+                });
+                if (currentVal) sectionSelect.value = currentVal;
+                savedSection = sectionSelect.value;
+                localStorage.setItem(displayStorageKey, savedSection);
+
+                var selectedSection = sectionSelect.value;
+                if (!selectedSection) {
+                  if (config.hideSection && uniqueSections.length > 0) {
                     sectionSelect.value = uniqueSections[0];
                     selectedSection = uniqueSections[0];
                   } else {
-                    showPlaceholder('No sections found.'); return;
+                    showPlaceholder('Select a section from the dropdown above.'); return;
                   }
-                } else {
-                  showPlaceholder('Select a section from the dropdown above.'); return;
                 }
-              }
 
-              var rowIndex = -1;
-              for (var i = 0; i < sectionData.length; i++) {
-                if (String(sectionData[i]).trim() === selectedSection) {
-                  rowIndex = i;
-                  break;
+                var rowIndex = -1;
+                for (var i = 0; i < sectionData.length; i++) {
+                  if (String(sectionData[i]).trim() === selectedSection) {
+                    rowIndex = i;
+                    break;
+                  }
                 }
+                if (rowIndex === -1) { showPlaceholder('No data for section "' + selectedSection + '".'); return; }
+                renderContent(columnData[rowIndex]);
               }
-              if (rowIndex === -1) { showPlaceholder('No data for section "' + selectedSection + '".'); return; }
-              renderContent(columnData[rowIndex]);
             } else {
               sectionBar.style.display = 'none';
               renderContent(columnData[0]);
