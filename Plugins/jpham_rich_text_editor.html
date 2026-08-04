@@ -614,6 +614,19 @@
           }
           var md = columnData[rowIndex];
           lastReceivedData = md;
+          // Don't overwrite editor with stale data right after saving
+          if (justSaved && md !== undefined) {
+            var currentHtml = quill.root.innerHTML;
+            // If the data from table matches what we just saved, keep it
+            // If it's different (old data), skip loading to preserve the save
+            if (md !== currentHtml && md !== loadedContent) {
+              // Data actually changed (e.g., region filter changed) - load it
+              justSaved = false;
+              loadContent(md);
+            }
+            // Otherwise keep showing what the user saved
+            return;
+          }
           loadContent(md);
           forceReload = false;
           setStatus('Refreshed', 'saved');
