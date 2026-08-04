@@ -786,23 +786,8 @@
 
           var md = columnData[rowIndex];
           lastReceivedData = md;
-          if (forceReload) {
-            forceReload = false;
-            loadContent(md);
-            return;
-          }
-          if (justSaved) {
-            if (md === loadedContent) {
-              justSaved = false;
-              return;
-            } else {
-              justSaved = false;
-            }
-          }
-          // Always load if content is different from what's currently shown
-          if (md !== loadedContent) {
-            loadContent(md);
-          }
+          // Always load the content
+          loadContent(md);
         });
       }
     });
