@@ -367,6 +367,7 @@
           { name: 'source', type: 'element' },
           { name: 'markdownColumn', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['text'], label: 'Markdown Column' },
           { name: 'sectionColumn', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['text'], label: 'Section Column (optional)' },
+          { name: 'sectionValue', type: 'text', label: 'Section Value' },
           { name: 'hideSection', type: 'checkbox', label: 'Hide Section Selector' }
         );
       }
@@ -717,36 +718,40 @@
           if (config.sectionColumn) {
             var sectionData = data[config.sectionColumn];
             if (sectionData) {
-              sectionBar.style.display = config.hideSection ? 'none' : 'flex';
-              var uniqueSections = [];
-              for (var i = 0; i < sectionData.length; i++) {
-                var val = String(sectionData[i]).trim();
-                if (val && uniqueSections.indexOf(val) === -1) uniqueSections.push(val);
-              }
-              sectionSelect.innerHTML = '<option value="">-- Select --</option>';
-              uniqueSections.forEach(function (s) {
-                var opt = document.createElement('option');
-                opt.value = s;
-                opt.textContent = s;
-                sectionSelect.appendChild(opt);
-              });
-              if (editorSavedSection) sectionSelect.value = editorSavedSection;
+              var fixedSection = config.sectionValue ? String(config.sectionValue).trim() : null;
+              var targetSection = fixedSection || editorSavedSection || '';
 
-              var selectedSection = sectionSelect.value;
-              if (!selectedSection) {
-                setStatus('Select a section above', '');
-                return;
-              }
+              if (targetSection) {
+                sectionBar.style.display = config.hideSection ? 'none' : 'flex';
+                sectionSelect.innerHTML = '<option value="' + targetSection + '">' + targetSection + '</option>';
+                sectionSelect.value = targetSection;
 
-              rowIndex = -1;
-              for (var i = 0; i < sectionData.length; i++) {
-                if (String(sectionData[i]).trim() === selectedSection) {
-                  rowIndex = i;
-                  break;
+                rowIndex = -1;
+                for (var i = 0; i < sectionData.length; i++) {
+                  if (String(sectionData[i]).trim() === targetSection) {
+                    rowIndex = i;
+                    break;
+                  }
                 }
-              }
-              if (rowIndex === -1) {
-                lastReceivedData = null;
+                if (rowIndex === -1) {
+                  lastReceivedData = null;
+                  return;
+                }
+              } else {
+                sectionBar.style.display = config.hideSection ? 'none' : 'flex';
+                var uniqueSections = [];
+                for (var i = 0; i < sectionData.length; i++) {
+                  var val = String(sectionData[i]).trim();
+                  if (val && uniqueSections.indexOf(val) === -1) uniqueSections.push(val);
+                }
+                sectionSelect.innerHTML = '<option value="">-- Select --</option>';
+                uniqueSections.forEach(function (s) {
+                  var opt = document.createElement('option');
+                  opt.value = s;
+                  opt.textContent = s;
+                  sectionSelect.appendChild(opt);
+                });
+                setStatus('Select a section or set Section Value in config', '');
                 return;
               }
             } else {
