@@ -367,7 +367,6 @@
           { name: 'source', type: 'element' },
           { name: 'markdownColumn', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['text'], label: 'Markdown Column' },
           { name: 'sectionColumn', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['text'], label: 'Section Column (optional)' },
-          { name: 'sectionValue', type: 'text', label: 'Section Value' },
           { name: 'hideSection', type: 'checkbox', label: 'Hide Section Selector' }
         );
       }
@@ -665,7 +664,7 @@
       }
 
       // Only resubscribe if data source config actually changed
-      var editorSourceKey = (config.source || '') + ':' + (config.markdownColumn || '') + ':' + (config.sectionColumn || '') + ':' + (config.sectionValue || '');
+      var editorSourceKey = (config.source || '') + ':' + (config.markdownColumn || '') + ':' + (config.sectionColumn || '');
       if (typeof window._editorLastKey === 'undefined') window._editorLastKey = '';
       if (editorSourceKey === window._editorLastKey && unsubData) {
         return;
@@ -726,56 +725,32 @@
           if (config.sectionColumn) {
             var sectionData = data[config.sectionColumn];
             if (sectionData) {
-              // Use config sectionValue if set (persists in Sigma), otherwise use dropdown
-              var fixedSection = config.sectionValue ? String(config.sectionValue).trim() : null;
+              sectionBar.style.display = config.hideSection ? 'none' : 'flex';
+              var uniqueSections = [];
+              for (var i = 0; i < sectionData.length; i++) {
+                var val = String(sectionData[i]).trim();
+                if (val && uniqueSections.indexOf(val) === -1) uniqueSections.push(val);
+              }
+              sectionSelect.innerHTML = '<option value="">-- Select --</option>';
+              uniqueSections.forEach(function (s) {
+                var opt = document.createElement('option');
+                opt.value = s;
+                opt.textContent = s;
+                sectionSelect.appendChild(opt);
+              });
+              if (editorSavedSection) sectionSelect.value = editorSavedSection;
 
-              if (fixedSection) {
-                // Section set via config — hide dropdown, use fixed value
-                sectionBar.style.display = 'none';
-                rowIndex = -1;
-                for (var i = 0; i < sectionData.length; i++) {
-                  if (String(sectionData[i]).trim() === fixedSection) {
-                    rowIndex = i;
-                    break;
-                  }
-                }
-                if (rowIndex === -1) {
-                  lastReceivedData = null;
-                  return;
-                }
-              } else {
-                // No config value — show dropdown
-                sectionBar.style.display = config.hideSection ? 'none' : 'flex';
-                var uniqueSections = [];
-                for (var i = 0; i < sectionData.length; i++) {
-                  var val = String(sectionData[i]).trim();
-                  if (val && uniqueSections.indexOf(val) === -1) uniqueSections.push(val);
-                }
-                sectionSelect.innerHTML = '<option value="">-- Select --</option>';
-                uniqueSections.forEach(function (s) {
-                  var opt = document.createElement('option');
-                  opt.value = s;
-                  opt.textContent = s;
-                  sectionSelect.appendChild(opt);
-                });
-                if (editorSavedSection) sectionSelect.value = editorSavedSection;
+              var selectedSection = sectionSelect.value;
+              if (!selectedSection) {
+                setStatus('Select a section above', '');
+                return;
+              }
 
-                var selectedSection = sectionSelect.value;
-                if (!selectedSection) {
-                  setStatus('Select a section above', '');
-                  return;
-                }
-
-                rowIndex = -1;
-                for (var i = 0; i < sectionData.length; i++) {
-                  if (String(sectionData[i]).trim() === selectedSection) {
-                    rowIndex = i;
-                    break;
-                  }
-                }
-                if (rowIndex === -1) {
-                  lastReceivedData = null;
-                  return;
+              rowIndex = -1;
+              for (var i = 0; i < sectionData.length; i++) {
+                if (String(sectionData[i]).trim() === selectedSection) {
+                  rowIndex = i;
+                  break;
                 }
               }
               if (rowIndex === -1) {
