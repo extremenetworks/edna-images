@@ -664,6 +664,14 @@
         setupHint.classList.remove('visible');
       }
 
+      // Only resubscribe if data source config actually changed
+      var editorSourceKey = (config.source || '') + ':' + (config.markdownColumn || '') + ':' + (config.sectionColumn || '') + ':' + (config.sectionValue || '');
+      if (typeof window._editorLastKey === 'undefined') window._editorLastKey = '';
+      if (editorSourceKey === window._editorLastKey && unsubData) {
+        return;
+      }
+      window._editorLastKey = editorSourceKey;
+
       if (unsubData) { unsubData(); unsubData = null; }
       justSaved = false;
 
@@ -783,20 +791,7 @@
 
           var md = columnData[rowIndex];
           lastReceivedData = md;
-          if (forceReload) {
-            forceReload = false;
-            loadContent(md);
-            return;
-          }
-          if (justSaved) {
-            if (md === loadedContent) {
-              justSaved = false;
-            }
-            return;
-          }
-          if (!hasUnsavedChanges) {
-            loadContent(md);
-          }
+          loadContent(md);
         });
       }
     });
