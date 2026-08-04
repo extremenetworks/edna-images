@@ -499,6 +499,7 @@
     var outputVarId = null;
     var onSaveId = null;
     var unsubData = null;
+    var currentConfig = null;
     var hasUnsavedChanges = false;
     var justSaved = false;
     var isLoading = false;
@@ -583,14 +584,42 @@
       quill.setContents([]);
       isLoading = false;
       loadedContent = '';
-      // Load cached data or show status
-      if (lastReceivedData !== null) {
-        loadContent(lastReceivedData);
-        forceReload = false;
-        setStatus('Refreshed', 'saved');
+      lastReceivedData = null;
+      lastFullData = null;
+      // Force resubscribe to get fresh data from Sigma
+      if (unsubData) { unsubData(); unsubData = null; }
+      if (currentConfig && currentConfig.source) {
+        setStatus('Refreshing...', '');
+        unsubData = client.elements.subscribeToElementData(currentConfig.source, function (data) {
+          lastFullData = data;
+          var columnData = data[currentConfig.markdownColumn];
+          if (!columnData || columnData.length === 0) {
+            setStatus('No data available', 'error');
+            return;
+          }
+          var rowIndex = 0;
+          if (currentConfig.sectionColumn) {
+            var sectionData = data[currentConfig.sectionColumn];
+            var fixedSection = currentConfig.sectionValue ? String(currentConfig.sectionValue).trim() : null;
+            var pluginId = new URLSearchParams(window.location.search).get('id') || 'default';
+            var editorSavedSection = localStorage.getItem('sigma-editor-section-' + pluginId) || '';
+            var targetSection = fixedSection || editorSavedSection || '';
+            if (targetSection && sectionData) {
+              rowIndex = -1;
+              for (var i = 0; i < sectionData.length; i++) {
+                if (String(sectionData[i]).trim() === targetSection) rowIndex = i;
+              }
+              if (rowIndex === -1) { setStatus('Section not found', 'error'); return; }
+            }
+          }
+          var md = columnData[rowIndex];
+          lastReceivedData = md;
+          loadContent(md);
+          forceReload = false;
+          setStatus('Refreshed', 'saved');
+        });
       } else {
-        setStatus('No data to refresh. Check your data source config.', 'error');
-        forceReload = true;
+        setStatus('No data source configured', 'error');
       }
     });
 
@@ -637,6 +666,7 @@
 
     // --- Config Subscription ---
     client.config.subscribe(function (config) {
+      currentConfig = config;
       // Update title
       var titleEl = document.getElementById('editor-title');
       if (config.editorTitle && config.showTitle) {
