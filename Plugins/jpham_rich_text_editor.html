@@ -819,6 +819,7 @@
           }
 
           var md = columnData[rowIndex];
+          console.log('[Editor] Loading row', rowIndex, '| content:', md ? ('"' + md.substring(0, 80) + '"') : '(null/empty)');
           lastReceivedData = md;
           loadContent(md);
         });
