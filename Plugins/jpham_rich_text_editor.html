@@ -609,7 +609,7 @@
               for (var i = 0; i < sectionData.length; i++) {
                 if (String(sectionData[i]).trim() === targetSection) rowIndex = i;
               }
-              if (rowIndex === -1) { setStatus('Section not found', 'error'); return; }
+              if (rowIndex === -1) { setStatus('No content for "' + targetSection + '" yet — ready to write', ''); forceReload = false; return; }
             }
           }
           var md = columnData[rowIndex];
@@ -777,6 +777,13 @@
                 }
                 if (rowIndex === -1) {
                   lastReceivedData = null;
+                  // No data for this section yet - show empty editor ready to write
+                  isLoading = true;
+                  quill.setContents([]);
+                  isLoading = false;
+                  loadedContent = '';
+                  hasUnsavedChanges = false;
+                  setStatus('No content for section "' + targetSection + '" yet', '');
                   return;
                 }
               } else {
