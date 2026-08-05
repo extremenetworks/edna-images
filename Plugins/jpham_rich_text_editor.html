@@ -608,7 +608,7 @@
               rowIndex = -1;
               var targetLower = targetSection.toLowerCase();
               for (var i = 0; i < sectionData.length; i++) {
-                if (String(sectionData[i]).trim().toLowerCase() === targetLower) rowIndex = i;
+                if (String(sectionData[i]).trim().toLowerCase() === targetLower) { rowIndex = i; break; }
               }
               if (rowIndex === -1) { setStatus('No content for "' + targetSection + '" yet — ready to write', ''); forceReload = false; return; }
             }
@@ -778,7 +778,8 @@
                 var targetLower = targetSection.toLowerCase();
                 for (var i = 0; i < sectionData.length; i++) {
                   if (String(sectionData[i]).trim().toLowerCase() === targetLower) {
-                    rowIndex = i;  // Keep overwriting to get the latest (last) match
+                    rowIndex = i;
+                    break;  // Use first match (same as Display)
                   }
                 }
                 console.log('[Editor] Section filter:', targetSection, '| Rows:', sectionData.length, '| Match at:', rowIndex);
