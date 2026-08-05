@@ -606,8 +606,9 @@
             var targetSection = fixedSection || editorSavedSection || '';
             if (targetSection && sectionData) {
               rowIndex = -1;
+              var targetLower = targetSection.toLowerCase();
               for (var i = 0; i < sectionData.length; i++) {
-                if (String(sectionData[i]).trim() === targetSection) rowIndex = i;
+                if (String(sectionData[i]).trim().toLowerCase() === targetLower) rowIndex = i;
               }
               if (rowIndex === -1) { setStatus('No content for "' + targetSection + '" yet — ready to write', ''); forceReload = false; return; }
             }
@@ -770,11 +771,13 @@
                 sectionSelect.value = targetSection;
 
                 rowIndex = -1;
+                var targetLower = targetSection.toLowerCase();
                 for (var i = 0; i < sectionData.length; i++) {
-                  if (String(sectionData[i]).trim() === targetSection) {
+                  if (String(sectionData[i]).trim().toLowerCase() === targetLower) {
                     rowIndex = i;  // Keep overwriting to get the latest (last) match
                   }
                 }
+                console.log('[Editor] Section filter:', targetSection, '| Rows:', sectionData.length, '| Match at:', rowIndex);
                 if (rowIndex === -1) {
                   lastReceivedData = null;
                   // No data for this section yet - show empty editor ready to write
