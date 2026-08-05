@@ -615,6 +615,7 @@
           }
           var md = columnData[rowIndex];
           lastReceivedData = md;
+          console.log('[Editor] Data at row', rowIndex, ':', md ? md.substring(0, 50) : '(empty)', '| justSaved:', justSaved, '| loadedContent:', loadedContent ? loadedContent.substring(0, 30) : '(empty)');
           // Don't overwrite editor with stale data right after saving
           if (justSaved && md !== undefined) {
             var currentHtml = quill.root.innerHTML;
@@ -622,12 +623,15 @@
             // If it's different (old data), skip loading to preserve the save
             if (md !== currentHtml && md !== loadedContent) {
               // Data actually changed (e.g., region filter changed) - load it
+              console.log('[Editor] justSaved but data changed — loading new content');
               justSaved = false;
               loadContent(md);
+            } else {
+              console.log('[Editor] justSaved and data matches — skipping reload');
             }
-            // Otherwise keep showing what the user saved
             return;
           }
+          console.log('[Editor] Loading content normally');
           loadContent(md);
           forceReload = false;
           setStatus('Refreshed', 'saved');
