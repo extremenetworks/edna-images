@@ -405,7 +405,8 @@
               urlInput.value = '';
               widthInput.value = '100%';
               dialog.style.display = 'flex';
-              urlInput.focus();
+              quill.enable(false);  // Disable editor while dialog is open
+              setTimeout(function () { urlInput.focus(); }, 50);
             }
           }
         }
@@ -453,11 +454,13 @@
     // Image dialog buttons
     document.getElementById('image-cancel-btn').addEventListener('click', function () {
       document.getElementById('image-dialog').style.display = 'none';
+      quill.enable(true);
     });
     document.getElementById('image-insert-btn').addEventListener('click', function () {
       var url = document.getElementById('image-url-input').value.trim();
       var width = document.getElementById('image-width-input').value.trim();
       document.getElementById('image-dialog').style.display = 'none';
+      quill.enable(true);
       if (!url) return;
       var range = quill.getSelection(true);
       quill.insertEmbed(range.index, 'image', url);
@@ -471,6 +474,13 @@
         }, 50);
       }
       quill.setSelection(range.index + 1);
+    });
+    // Prevent keystrokes in dialog from going to Quill
+    document.getElementById('image-dialog').addEventListener('keydown', function (e) {
+      e.stopPropagation();
+    });
+    document.getElementById('image-dialog').addEventListener('keyup', function (e) {
+      e.stopPropagation();
     });
 
 
