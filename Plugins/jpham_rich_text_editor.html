@@ -352,24 +352,28 @@
     </div>
   </div>
 
-  <!-- Image Insert Panel (inline with preview) -->
-  <div id="image-panel" style="display:none;padding:10px 14px;background:#f6f8fa;border:1px solid #d1d9e0;border-radius:6px;margin:8px 0;">
-    <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:13px;margin-bottom:8px;">
-      <span style="color:#656d76;">1. Copy URL → </span>
-      <button id="image-load-btn" style="padding:5px 10px;border:none;border-radius:4px;background:#2563eb;color:#fff;cursor:pointer;font-size:12px;">Load from Clipboard</button>
-      <span style="color:#656d76;margin-left:4px;">2. Size:</span>
-      <button class="img-size-btn" data-width="100%" style="padding:3px 8px;border:1px solid #2563eb;border-radius:4px;background:#eff6ff;cursor:pointer;font-size:11px;color:#2563eb;">100%</button>
-      <button class="img-size-btn" data-width="75%" style="padding:3px 8px;border:1px solid #d1d9e0;border-radius:4px;background:#fff;cursor:pointer;font-size:11px;">75%</button>
-      <button class="img-size-btn" data-width="50%" style="padding:3px 8px;border:1px solid #d1d9e0;border-radius:4px;background:#fff;cursor:pointer;font-size:11px;">50%</button>
-      <button class="img-size-btn" data-width="33%" style="padding:3px 8px;border:1px solid #d1d9e0;border-radius:4px;background:#fff;cursor:pointer;font-size:11px;">33%</button>
-      <button class="img-size-btn" data-width="25%" style="padding:3px 8px;border:1px solid #d1d9e0;border-radius:4px;background:#fff;cursor:pointer;font-size:11px;">25%</button>
-      <button id="image-insert-btn" style="padding:5px 10px;border:none;border-radius:4px;background:#16a34a;color:#fff;cursor:pointer;font-size:12px;display:none;margin-left:auto;">Insert</button>
-      <button id="image-cancel-btn" style="padding:5px 10px;border:1px solid #d1d9e0;border-radius:4px;background:#fff;cursor:pointer;font-size:12px;">Cancel</button>
+  <!-- Image Insert Panel (popup style with paste input) -->
+  <div id="image-panel" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:360px;background:#fff;border-radius:8px;padding:20px;box-shadow:0 4px 20px rgba(0,0,0,0.3);z-index:9999;">
+    <div style="font-weight:600;margin-bottom:12px;font-size:14px;">Insert Image</div>
+    <label style="font-size:12px;color:#656d76;">Image URL</label>
+    <input id="image-url-input" type="text" placeholder="Paste image URL here..." style="width:100%;padding:8px 10px;border:1px solid #d1d9e0;border-radius:4px;margin-bottom:12px;box-sizing:border-box;font-size:13px;" />
+    <label style="font-size:12px;color:#656d76;">Size</label>
+    <div style="display:flex;gap:6px;margin:6px 0 12px 0;flex-wrap:wrap;">
+      <button class="img-size-btn" data-width="100%" style="padding:4px 10px;border:1px solid #2563eb;border-radius:4px;background:#eff6ff;cursor:pointer;font-size:12px;color:#2563eb;">100%</button>
+      <button class="img-size-btn" data-width="75%" style="padding:4px 10px;border:1px solid #d1d9e0;border-radius:4px;background:#fff;cursor:pointer;font-size:12px;">75%</button>
+      <button class="img-size-btn" data-width="50%" style="padding:4px 10px;border:1px solid #d1d9e0;border-radius:4px;background:#fff;cursor:pointer;font-size:12px;">50%</button>
+      <button class="img-size-btn" data-width="33%" style="padding:4px 10px;border:1px solid #d1d9e0;border-radius:4px;background:#fff;cursor:pointer;font-size:12px;">33%</button>
+      <button class="img-size-btn" data-width="25%" style="padding:4px 10px;border:1px solid #d1d9e0;border-radius:4px;background:#fff;cursor:pointer;font-size:12px;">25%</button>
     </div>
-    <div id="image-preview" style="display:none;border:1px dashed #d1d9e0;border-radius:4px;padding:8px;background:#fff;text-align:center;">
+    <div id="image-preview" style="display:none;border:1px dashed #d1d9e0;border-radius:4px;padding:8px;background:#f6f8fa;text-align:center;margin-bottom:12px;max-height:200px;overflow:auto;">
       <img id="image-preview-img" src="" style="max-width:100%;height:auto;" />
     </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;">
+      <button id="image-cancel-btn" style="padding:7px 16px;border:1px solid #d1d9e0;border-radius:4px;background:#f6f8fa;cursor:pointer;font-size:13px;">Cancel</button>
+      <button id="image-insert-btn" style="padding:7px 16px;border:none;border-radius:4px;background:#2563eb;color:#fff;cursor:pointer;font-size:13px;">Insert</button>
+    </div>
   </div>
+  <div id="image-overlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.3);z-index:9998;"></div>
 
   <script>
     const { client } = SigmaPlugin;
@@ -417,9 +421,13 @@
           container: '#toolbar',
           handlers: {
             image: function () {
-              console.log('[Editor] Image button clicked');
               var panel = document.getElementById('image-panel');
+              var overlay = document.getElementById('image-overlay');
+              var urlInput = document.getElementById('image-url-input');
+              urlInput.value = '';
+              document.getElementById('image-preview').style.display = 'none';
               panel.style.display = 'block';
+              overlay.style.display = 'block';
             }
           }
         }
@@ -466,25 +474,26 @@
 
     // Image panel
     var imagePanel = document.getElementById('image-panel');
+    var imageOverlay = document.getElementById('image-overlay');
     var imagePreview = document.getElementById('image-preview');
     var imagePreviewImg = document.getElementById('image-preview-img');
-    var imageInsertBtn = document.getElementById('image-insert-btn');
-    var imageLoadedUrl = '';
+    var imageUrlInput = document.getElementById('image-url-input');
     var imageSelectedWidth = '100%';
 
-    document.getElementById('image-cancel-btn').addEventListener('click', function () {
+    function closeImagePanel() {
       imagePanel.style.display = 'none';
+      imageOverlay.style.display = 'none';
       imagePreview.style.display = 'none';
-      imageInsertBtn.style.display = 'none';
-      imageLoadedUrl = '';
-    });
+    }
+
+    document.getElementById('image-cancel-btn').addEventListener('click', closeImagePanel);
+    imageOverlay.addEventListener('click', closeImagePanel);
 
     // Size buttons
     var sizeBtns = document.querySelectorAll('.img-size-btn');
     sizeBtns.forEach(function (btn) {
       btn.addEventListener('click', function () {
         imageSelectedWidth = btn.getAttribute('data-width');
-        // Highlight selected
         sizeBtns.forEach(function (b) {
           b.style.border = '1px solid #d1d9e0';
           b.style.background = '#fff';
@@ -493,48 +502,42 @@
         btn.style.border = '1px solid #2563eb';
         btn.style.background = '#eff6ff';
         btn.style.color = '#2563eb';
-        // Update preview
-        if (imageLoadedUrl) {
+        // Update preview if URL exists
+        var url = imageUrlInput.value.trim();
+        if (url) {
+          imagePreviewImg.src = url;
           imagePreviewImg.style.width = imageSelectedWidth;
+          imagePreview.style.display = 'block';
         }
       });
     });
 
-    // Load from clipboard and show preview
-    document.getElementById('image-load-btn').addEventListener('click', async function () {
-      var url = '';
-      try {
-        url = await navigator.clipboard.readText();
-      } catch (err) {
-        url = '';
+    // Show preview on paste/input in URL field
+    imageUrlInput.addEventListener('input', function () {
+      var url = imageUrlInput.value.trim();
+      if (url && (url.startsWith('http') || url.startsWith('/'))) {
+        imagePreviewImg.src = url;
+        imagePreviewImg.style.width = imageSelectedWidth;
+        imagePreview.style.display = 'block';
+      } else {
+        imagePreview.style.display = 'none';
       }
-      if (!url || !url.trim()) {
-        setStatus('No URL in clipboard', 'error');
-        return;
-      }
-      url = url.trim();
-      imageLoadedUrl = url;
-      imagePreviewImg.src = url;
-      imagePreviewImg.style.width = imageSelectedWidth;
-      imagePreview.style.display = 'block';
-      imageInsertBtn.style.display = 'inline-block';
     });
 
-    // Insert the previewed image
-    imageInsertBtn.addEventListener('click', function () {
-      imagePanel.style.display = 'none';
-      imagePreview.style.display = 'none';
-      imageInsertBtn.style.display = 'none';
+    // Insert button
+    document.getElementById('image-insert-btn').addEventListener('click', function () {
+      var url = imageUrlInput.value.trim();
+      if (!url) { setStatus('Enter an image URL', 'error'); return; }
+      closeImagePanel();
       quill.focus();
       var range = quill.getSelection(true);
-      quill.insertEmbed(range.index, 'image', imageLoadedUrl);
+      quill.insertEmbed(range.index, 'image', url);
       setTimeout(function () {
-        var img = quill.root.querySelector('img[src="' + imageLoadedUrl + '"]');
+        var img = quill.root.querySelector('img[src="' + url + '"]');
         if (img) {
           img.style.width = imageSelectedWidth;
           img.style.height = 'auto';
         }
-        imageLoadedUrl = '';
       }, 50);
       quill.setSelection(range.index + 1);
       setStatus('Image inserted', 'saved');
