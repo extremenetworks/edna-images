@@ -633,6 +633,7 @@
 
       try {
         var html = quill.root.innerHTML;
+        console.log('[Editor] Saving HTML:', html.substring(0, 200));
 
         sdkSetVariable(outputVarId, html);
 
@@ -820,7 +821,6 @@
 
       if (unsubData) { unsubData(); unsubData = null; }
       justSaved = false;
-
       if (mode === 'data' && config.source && config.markdownColumn) {
         var sectionBar = document.getElementById('section-bar');
         var sectionSelect = document.getElementById('section-select');
@@ -925,8 +925,13 @@
           }
 
           var md = columnData[rowIndex];
-          console.log('[Editor] Loading row', rowIndex, '| content:', md ? ('"' + md.substring(0, 80) + '"') : '(null/empty)');
+          console.log('[Editor] Loading row', rowIndex, '| content:', md ? ('"' + md.substring(0, 80) + '"') : '(null/empty)', '| justSaved:', justSaved);
           lastReceivedData = md;
+          // Don't overwrite editor right after saving
+          if (justSaved) {
+            console.log('[Editor] Skipping load — just saved');
+            return;
+          }
           loadContent(md);
         });
       }
