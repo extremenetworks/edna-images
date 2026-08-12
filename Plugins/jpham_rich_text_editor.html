@@ -352,13 +352,20 @@
     </div>
   </div>
 
-  <!-- Image Insert Panel (inline, not modal) -->
-  <div id="image-panel" style="display:none;padding:10px 14px;background:#f6f8fa;border:1px solid #d1d9e0;border-radius:6px;margin:8px 0;">
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-      <input id="image-url-input" type="text" placeholder="Image URL (https://...)" style="flex:1;min-width:180px;padding:6px 8px;border:1px solid #d1d9e0;border-radius:4px;font-size:13px;" />
-      <input id="image-width-input" type="text" value="100%" placeholder="Width" style="width:70px;padding:6px 8px;border:1px solid #d1d9e0;border-radius:4px;font-size:13px;" />
-      <button id="image-insert-btn" style="padding:6px 12px;border:none;border-radius:4px;background:#2563eb;color:#fff;cursor:pointer;font-size:13px;">Insert</button>
-      <button id="image-cancel-btn" style="padding:6px 12px;border:1px solid #d1d9e0;border-radius:4px;background:#fff;cursor:pointer;font-size:13px;">Cancel</button>
+  <!-- Image Insert Panel (inline) -->
+  <div id="image-panel" style="display:none;padding:8px 14px;background:#f6f8fa;border:1px solid #d1d9e0;border-radius:6px;margin:8px 0;">
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px;">
+      <span style="color:#656d76;">Copy image URL, then:</span>
+      <select id="image-width-input" style="padding:4px 8px;border:1px solid #d1d9e0;border-radius:4px;">
+        <option value="100%">Full width</option>
+        <option value="75%">75%</option>
+        <option value="50%">50%</option>
+        <option value="300px">300px</option>
+        <option value="200px">200px</option>
+        <option value="150px">150px</option>
+      </select>
+      <button id="image-insert-btn" style="padding:5px 12px;border:none;border-radius:4px;background:#2563eb;color:#fff;cursor:pointer;">Paste &amp; Insert</button>
+      <button id="image-cancel-btn" style="padding:5px 12px;border:1px solid #d1d9e0;border-radius:4px;background:#fff;cursor:pointer;">Cancel</button>
     </div>
   </div>
 
@@ -410,12 +417,7 @@
             image: function () {
               console.log('[Editor] Image button clicked');
               var panel = document.getElementById('image-panel');
-              var urlInput = document.getElementById('image-url-input');
-              var widthInput = document.getElementById('image-width-input');
-              urlInput.value = '';
-              widthInput.value = '100%';
               panel.style.display = 'block';
-              urlInput.focus();
             }
           }
         }
@@ -465,11 +467,21 @@
     document.getElementById('image-cancel-btn').addEventListener('click', function () {
       imagePanel.style.display = 'none';
     });
-    document.getElementById('image-insert-btn').addEventListener('click', function () {
-      var url = document.getElementById('image-url-input').value.trim();
-      var width = document.getElementById('image-width-input').value.trim();
+    document.getElementById('image-insert-btn').addEventListener('click', async function () {
+      var width = document.getElementById('image-width-input').value;
+      var url = '';
+      try {
+        url = await navigator.clipboard.readText();
+      } catch (err) {
+        // Clipboard API blocked — show fallback
+        url = window.prompt ? window.prompt('Paste image URL:') : '';
+      }
+      if (!url || !url.trim()) {
+        setStatus('No URL in clipboard', 'error');
+        return;
+      }
+      url = url.trim();
       imagePanel.style.display = 'none';
-      if (!url) return;
       quill.focus();
       var range = quill.getSelection(true);
       quill.insertEmbed(range.index, 'image', url);
@@ -483,13 +495,7 @@
         }, 50);
       }
       quill.setSelection(range.index + 1);
-    });
-    // Allow Enter key in URL input to trigger insert
-    document.getElementById('image-url-input').addEventListener('keydown', function (e) {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        document.getElementById('image-insert-btn').click();
-      }
+      setStatus('Image inserted', 'saved');
     });
 
 
