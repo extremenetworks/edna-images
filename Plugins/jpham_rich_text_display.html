@@ -210,7 +210,8 @@
           // HTML content from the editor — render directly
           // Use permissive sanitization to preserve Quill's list structure
           contentEl.innerHTML = DOMPurify.sanitize(trimmed, {
-            ADD_ATTR: ['class', 'style', 'data-list', 'contenteditable'],
+            ADD_TAGS: ['img'],
+            ADD_ATTR: ['class', 'style', 'data-list', 'contenteditable', 'src', 'alt', 'width', 'height'],
             ALLOW_DATA_ATTR: true,
             KEEP_CONTENT: true,
             WHOLE_DOCUMENT: false
