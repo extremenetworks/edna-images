@@ -352,18 +352,13 @@
     </div>
   </div>
 
-  <!-- Image Insert Dialog -->
-  <div id="image-dialog" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:9999;align-items:center;justify-content:center;">
-    <div style="background:#fff;border-radius:8px;padding:20px;width:320px;box-shadow:0 4px 12px rgba(0,0,0,0.2);">
-      <div style="font-weight:600;margin-bottom:12px;">Insert Image</div>
-      <label style="font-size:12px;color:#656d76;">Image URL</label>
-      <input id="image-url-input" type="text" placeholder="https://..." style="width:100%;padding:6px 8px;border:1px solid #d1d9e0;border-radius:4px;margin-bottom:10px;box-sizing:border-box;" />
-      <label style="font-size:12px;color:#656d76;">Width (e.g., 300px, 50%, 100%)</label>
-      <input id="image-width-input" type="text" value="100%" style="width:100%;padding:6px 8px;border:1px solid #d1d9e0;border-radius:4px;margin-bottom:14px;box-sizing:border-box;" />
-      <div style="display:flex;gap:8px;justify-content:flex-end;">
-        <button id="image-cancel-btn" style="padding:6px 14px;border:1px solid #d1d9e0;border-radius:4px;background:#f6f8fa;cursor:pointer;">Cancel</button>
-        <button id="image-insert-btn" style="padding:6px 14px;border:none;border-radius:4px;background:#2563eb;color:#fff;cursor:pointer;">Insert</button>
-      </div>
+  <!-- Image Insert Panel (inline, not modal) -->
+  <div id="image-panel" style="display:none;padding:10px 14px;background:#f6f8fa;border:1px solid #d1d9e0;border-radius:6px;margin:8px 0;">
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+      <input id="image-url-input" type="text" placeholder="Image URL (https://...)" style="flex:1;min-width:180px;padding:6px 8px;border:1px solid #d1d9e0;border-radius:4px;font-size:13px;" />
+      <input id="image-width-input" type="text" value="100%" placeholder="Width" style="width:70px;padding:6px 8px;border:1px solid #d1d9e0;border-radius:4px;font-size:13px;" />
+      <button id="image-insert-btn" style="padding:6px 12px;border:none;border-radius:4px;background:#2563eb;color:#fff;cursor:pointer;font-size:13px;">Insert</button>
+      <button id="image-cancel-btn" style="padding:6px 12px;border:1px solid #d1d9e0;border-radius:4px;background:#fff;cursor:pointer;font-size:13px;">Cancel</button>
     </div>
   </div>
 
@@ -414,16 +409,13 @@
           handlers: {
             image: function () {
               console.log('[Editor] Image button clicked');
-              var dialog = document.getElementById('image-dialog');
+              var panel = document.getElementById('image-panel');
               var urlInput = document.getElementById('image-url-input');
               var widthInput = document.getElementById('image-width-input');
               urlInput.value = '';
               widthInput.value = '100%';
-              dialog.style.display = 'flex';
-              quill.enable(false);
-              quill.root.blur();
-              quill.root.setAttribute('contenteditable', 'false');
-              setTimeout(function () { urlInput.focus(); urlInput.click(); }, 100);
+              panel.style.display = 'block';
+              urlInput.focus();
             }
           }
         }
@@ -468,37 +460,15 @@
       quill.format('size', size + 'px');
     });
 
-    // Image dialog - block ALL events from reaching Quill
-    var imageDialog = document.getElementById('image-dialog');
-    ['mousedown', 'mouseup', 'click', 'keydown', 'keyup', 'keypress', 'focus', 'focusin', 'focusout', 'input'].forEach(function (evt) {
-      imageDialog.addEventListener(evt, function (e) {
-        e.stopPropagation();
-      }, true);
+    // Image panel buttons
+    var imagePanel = document.getElementById('image-panel');
+    document.getElementById('image-cancel-btn').addEventListener('click', function () {
+      imagePanel.style.display = 'none';
     });
-    // Prevent focus from leaving the dialog
-    imageDialog.addEventListener('focusout', function (e) {
-      if (imageDialog.style.display === 'flex' && !imageDialog.contains(e.relatedTarget)) {
-        e.preventDefault();
-        document.getElementById('image-url-input').focus();
-      }
-    });
-
-    // Image dialog buttons
-    document.getElementById('image-cancel-btn').addEventListener('click', function (e) {
-      e.stopPropagation();
-      e.preventDefault();
-      imageDialog.style.display = 'none';
-      quill.root.setAttribute('contenteditable', 'true');
-      quill.enable(true);
-    });
-    document.getElementById('image-insert-btn').addEventListener('click', function (e) {
-      e.stopPropagation();
-      e.preventDefault();
+    document.getElementById('image-insert-btn').addEventListener('click', function () {
       var url = document.getElementById('image-url-input').value.trim();
       var width = document.getElementById('image-width-input').value.trim();
-      imageDialog.style.display = 'none';
-      quill.root.setAttribute('contenteditable', 'true');
-      quill.enable(true);
+      imagePanel.style.display = 'none';
       if (!url) return;
       quill.focus();
       var range = quill.getSelection(true);
@@ -513,6 +483,13 @@
         }, 50);
       }
       quill.setSelection(range.index + 1);
+    });
+    // Allow Enter key in URL input to trigger insert
+    document.getElementById('image-url-input').addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        document.getElementById('image-insert-btn').click();
+      }
     });
 
 
