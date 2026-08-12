@@ -283,6 +283,21 @@
     </div>
     <div class="footer">
       <div class="color-picker-wrapper">
+
+    <!-- Image Insert Dialog -->
+    <div id="image-dialog" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:9999;align-items:center;justify-content:center;">
+      <div style="background:#fff;border-radius:8px;padding:20px;width:320px;box-shadow:0 4px 12px rgba(0,0,0,0.2);">
+        <div style="font-weight:600;margin-bottom:12px;">Insert Image</div>
+        <label style="font-size:12px;color:#656d76;">Image URL</label>
+        <input id="image-url-input" type="text" placeholder="https://..." style="width:100%;padding:6px 8px;border:1px solid #d1d9e0;border-radius:4px;margin-bottom:10px;box-sizing:border-box;" />
+        <label style="font-size:12px;color:#656d76;">Width (e.g., 300px, 50%, 100%)</label>
+        <input id="image-width-input" type="text" value="100%" style="width:100%;padding:6px 8px;border:1px solid #d1d9e0;border-radius:4px;margin-bottom:14px;box-sizing:border-box;" />
+        <div style="display:flex;gap:8px;justify-content:flex-end;">
+          <button id="image-cancel-btn" style="padding:6px 14px;border:1px solid #d1d9e0;border-radius:4px;background:#f6f8fa;cursor:pointer;">Cancel</button>
+          <button id="image-insert-btn" style="padding:6px 14px;border:none;border-radius:4px;background:#2563eb;color:#fff;cursor:pointer;">Insert</button>
+        </div>
+      </div>
+    </div>
         <select id="font-size-input" class="font-size-input" title="Font size (px)">
           <option value="8">8</option>
           <option value="9">9</option>
@@ -440,13 +455,28 @@
 
     // --- Insert Image Handler (URL-based) ---
     toolbar.addHandler('image', function () {
-      var url = prompt('Enter image URL:');
+      // Show inline image dialog (prompt() is blocked by iframe sandbox)
+      var dialog = document.getElementById('image-dialog');
+      var urlInput = document.getElementById('image-url-input');
+      var widthInput = document.getElementById('image-width-input');
+      urlInput.value = '';
+      widthInput.value = '100%';
+      dialog.style.display = 'flex';
+      urlInput.focus();
+    });
+
+    // Image dialog buttons
+    document.getElementById('image-cancel-btn').addEventListener('click', function () {
+      document.getElementById('image-dialog').style.display = 'none';
+    });
+    document.getElementById('image-insert-btn').addEventListener('click', function () {
+      var url = document.getElementById('image-url-input').value.trim();
+      var width = document.getElementById('image-width-input').value.trim();
+      document.getElementById('image-dialog').style.display = 'none';
       if (!url) return;
-      var width = prompt('Width (e.g., 300px, 50%, or leave blank for auto):', '100%');
       var range = quill.getSelection(true);
       quill.insertEmbed(range.index, 'image', url);
       if (width) {
-        // Apply width via style attribute on the inserted image
         setTimeout(function () {
           var img = quill.root.querySelector('img[src="' + url + '"]');
           if (img) {
