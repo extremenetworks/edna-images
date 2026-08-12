@@ -466,17 +466,30 @@
       quill.format('size', size + 'px');
     });
 
+    // Image dialog - block ALL events from reaching Quill
+    var imageDialog = document.getElementById('image-dialog');
+    ['mousedown', 'mouseup', 'click', 'keydown', 'keyup', 'keypress', 'focus', 'input'].forEach(function (evt) {
+      imageDialog.addEventListener(evt, function (e) {
+        e.stopPropagation();
+      }, true);
+    });
+
     // Image dialog buttons
-    document.getElementById('image-cancel-btn').addEventListener('click', function () {
-      document.getElementById('image-dialog').style.display = 'none';
+    document.getElementById('image-cancel-btn').addEventListener('click', function (e) {
+      e.stopPropagation();
+      e.preventDefault();
+      imageDialog.style.display = 'none';
       quill.enable(true);
     });
-    document.getElementById('image-insert-btn').addEventListener('click', function () {
+    document.getElementById('image-insert-btn').addEventListener('click', function (e) {
+      e.stopPropagation();
+      e.preventDefault();
       var url = document.getElementById('image-url-input').value.trim();
       var width = document.getElementById('image-width-input').value.trim();
-      document.getElementById('image-dialog').style.display = 'none';
+      imageDialog.style.display = 'none';
       quill.enable(true);
       if (!url) return;
+      quill.focus();
       var range = quill.getSelection(true);
       quill.insertEmbed(range.index, 'image', url);
       if (width) {
@@ -489,13 +502,6 @@
         }, 50);
       }
       quill.setSelection(range.index + 1);
-    });
-    // Prevent keystrokes in dialog from going to Quill
-    document.getElementById('image-dialog').addEventListener('keydown', function (e) {
-      e.stopPropagation();
-    });
-    document.getElementById('image-dialog').addEventListener('keyup', function (e) {
-      e.stopPropagation();
     });
 
 
