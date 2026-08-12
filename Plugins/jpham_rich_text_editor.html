@@ -410,7 +410,18 @@
       theme: 'snow',
       modules: {
         toolbar: {
-          container: '#toolbar'
+          container: '#toolbar',
+          handlers: {
+            image: function () {
+              var dialog = document.getElementById('image-dialog');
+              var urlInput = document.getElementById('image-url-input');
+              var widthInput = document.getElementById('image-width-input');
+              urlInput.value = '';
+              widthInput.value = '100%';
+              dialog.style.display = 'flex';
+              urlInput.focus();
+            }
+          }
         }
       },
       placeholder: 'Start writing...'
@@ -451,18 +462,6 @@
       var size = headerSizes[String(value || '')] || 14;
       fontSizeInput.value = size;
       quill.format('size', size + 'px');
-    });
-
-    // --- Insert Image Handler (URL-based) ---
-    toolbar.addHandler('image', function () {
-      // Show inline image dialog (prompt() is blocked by iframe sandbox)
-      var dialog = document.getElementById('image-dialog');
-      var urlInput = document.getElementById('image-url-input');
-      var widthInput = document.getElementById('image-width-input');
-      urlInput.value = '';
-      widthInput.value = '100%';
-      dialog.style.display = 'flex';
-      urlInput.focus();
     });
 
     // Image dialog buttons
