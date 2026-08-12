@@ -420,8 +420,10 @@
               urlInput.value = '';
               widthInput.value = '100%';
               dialog.style.display = 'flex';
-              quill.enable(false);  // Disable editor while dialog is open
-              setTimeout(function () { urlInput.focus(); }, 50);
+              quill.enable(false);
+              quill.root.blur();
+              quill.root.setAttribute('contenteditable', 'false');
+              setTimeout(function () { urlInput.focus(); urlInput.click(); }, 100);
             }
           }
         }
@@ -468,10 +470,17 @@
 
     // Image dialog - block ALL events from reaching Quill
     var imageDialog = document.getElementById('image-dialog');
-    ['mousedown', 'mouseup', 'click', 'keydown', 'keyup', 'keypress', 'focus', 'input'].forEach(function (evt) {
+    ['mousedown', 'mouseup', 'click', 'keydown', 'keyup', 'keypress', 'focus', 'focusin', 'focusout', 'input'].forEach(function (evt) {
       imageDialog.addEventListener(evt, function (e) {
         e.stopPropagation();
       }, true);
+    });
+    // Prevent focus from leaving the dialog
+    imageDialog.addEventListener('focusout', function (e) {
+      if (imageDialog.style.display === 'flex' && !imageDialog.contains(e.relatedTarget)) {
+        e.preventDefault();
+        document.getElementById('image-url-input').focus();
+      }
     });
 
     // Image dialog buttons
@@ -479,6 +488,7 @@
       e.stopPropagation();
       e.preventDefault();
       imageDialog.style.display = 'none';
+      quill.root.setAttribute('contenteditable', 'true');
       quill.enable(true);
     });
     document.getElementById('image-insert-btn').addEventListener('click', function (e) {
@@ -487,6 +497,7 @@
       var url = document.getElementById('image-url-input').value.trim();
       var width = document.getElementById('image-width-input').value.trim();
       imageDialog.style.display = 'none';
+      quill.root.setAttribute('contenteditable', 'true');
       quill.enable(true);
       if (!url) return;
       quill.focus();
