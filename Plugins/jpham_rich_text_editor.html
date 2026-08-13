@@ -267,6 +267,17 @@
           <button class="ql-align" value=""></button>
           <button class="ql-align" value="center"></button>
           <button class="ql-align" value="right"></button>
+          <span style="position:relative;display:inline-block;">
+            <button id="line-spacing-btn" type="button" title="Line spacing" style="width:28px;height:24px;padding:0;border:none;background:none;cursor:pointer;font-size:16px;vertical-align:middle;">&#8661;</button>
+            <div id="line-spacing-menu" style="display:none;position:absolute;top:28px;left:0;background:#fff;border:1px solid #d1d9e0;border-radius:4px;box-shadow:0 2px 8px rgba(0,0,0,0.15);z-index:100;min-width:60px;">
+              <div class="ls-option" data-spacing="1" style="padding:5px 12px;cursor:pointer;font-size:12px;">1.0</div>
+              <div class="ls-option" data-spacing="1.15" style="padding:5px 12px;cursor:pointer;font-size:12px;">1.15</div>
+              <div class="ls-option" data-spacing="1.5" style="padding:5px 12px;cursor:pointer;font-size:12px;background:#eff6ff;">1.5</div>
+              <div class="ls-option" data-spacing="2" style="padding:5px 12px;cursor:pointer;font-size:12px;">2.0</div>
+              <div class="ls-option" data-spacing="2.5" style="padding:5px 12px;cursor:pointer;font-size:12px;">2.5</div>
+              <div class="ls-option" data-spacing="3" style="padding:5px 12px;cursor:pointer;font-size:12px;">3.0</div>
+            </div>
+          </span>
         </span>
         <span class="ql-formats">
           <button class="ql-link"></button>
@@ -342,11 +353,6 @@
           </div>
         </div>
         <input type="color" id="custom-color" value="#24292f" title="Pick a color" style="width:20px;height:20px;border:1px solid #d1d9e0;border-radius:3px;padding:0;cursor:pointer;" />
-        <span style="margin-left:8px;font-size:11px;color:#656d76;">Spacing:</span>
-        <button class="line-spacing-btn refresh-btn" data-spacing="1" style="padding:2px 6px;font-size:11px;">1.0</button>
-        <button class="line-spacing-btn refresh-btn" data-spacing="1.2" style="padding:2px 6px;font-size:11px;">1.2</button>
-        <button class="line-spacing-btn refresh-btn" data-spacing="1.5" style="padding:2px 6px;font-size:11px;border-color:#2563eb;background:#eff6ff;">1.5</button>
-        <button class="line-spacing-btn refresh-btn" data-spacing="2" style="padding:2px 6px;font-size:11px;">2.0</button>
       </div>
       <span id="status" class="status"></span>
       <button id="paste-btn" class="refresh-btn">Paste</button>
@@ -586,23 +592,36 @@
     });
 
     // --- Line Spacing ---
-    var lineSpacingBtns = document.querySelectorAll('.line-spacing-btn');
+    var lsBtn = document.getElementById('line-spacing-btn');
+    var lsMenu = document.getElementById('line-spacing-menu');
     var editorEl = document.querySelector('#editor .ql-editor');
-    // Default line spacing
     editorEl.style.lineHeight = '1.5';
 
-    lineSpacingBtns.forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        var spacing = btn.getAttribute('data-spacing');
+    lsBtn.addEventListener('click', function () {
+      lsMenu.style.display = lsMenu.style.display === 'none' ? 'block' : 'none';
+    });
+
+    document.querySelectorAll('.ls-option').forEach(function (opt) {
+      opt.addEventListener('click', function () {
+        var spacing = opt.getAttribute('data-spacing');
         editorEl.style.lineHeight = spacing;
         // Highlight selected
-        lineSpacingBtns.forEach(function (b) {
-          b.style.borderColor = '#d1d9e0';
-          b.style.background = '#f6f8fa';
-        });
-        btn.style.borderColor = '#2563eb';
-        btn.style.background = '#eff6ff';
+        document.querySelectorAll('.ls-option').forEach(function (o) { o.style.background = '#fff'; });
+        opt.style.background = '#eff6ff';
+        lsMenu.style.display = 'none';
       });
+      opt.addEventListener('mouseenter', function () { opt.style.background = '#f0f0f0'; });
+      opt.addEventListener('mouseleave', function () {
+        var selected = opt.getAttribute('data-spacing') === editorEl.style.lineHeight;
+        opt.style.background = selected ? '#eff6ff' : '#fff';
+      });
+    });
+
+    // Close menu when clicking elsewhere
+    document.addEventListener('click', function (e) {
+      if (!lsBtn.contains(e.target) && !lsMenu.contains(e.target)) {
+        lsMenu.style.display = 'none';
+      }
     });
 
     // --- SDK helpers ---
