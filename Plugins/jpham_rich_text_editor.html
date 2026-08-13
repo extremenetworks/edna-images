@@ -342,6 +342,11 @@
           </div>
         </div>
         <input type="color" id="custom-color" value="#24292f" title="Pick a color" style="width:20px;height:20px;border:1px solid #d1d9e0;border-radius:3px;padding:0;cursor:pointer;" />
+        <span style="margin-left:8px;font-size:11px;color:#656d76;">Spacing:</span>
+        <button class="line-spacing-btn refresh-btn" data-spacing="1" style="padding:2px 6px;font-size:11px;">1.0</button>
+        <button class="line-spacing-btn refresh-btn" data-spacing="1.2" style="padding:2px 6px;font-size:11px;">1.2</button>
+        <button class="line-spacing-btn refresh-btn" data-spacing="1.5" style="padding:2px 6px;font-size:11px;border-color:#2563eb;background:#eff6ff;">1.5</button>
+        <button class="line-spacing-btn refresh-btn" data-spacing="2" style="padding:2px 6px;font-size:11px;">2.0</button>
       </div>
       <span id="status" class="status"></span>
       <button id="paste-btn" class="refresh-btn">Paste</button>
@@ -578,6 +583,26 @@
 
     customColorPicker.addEventListener('input', function () {
       applyColor(customColorPicker.value);
+    });
+
+    // --- Line Spacing ---
+    var lineSpacingBtns = document.querySelectorAll('.line-spacing-btn');
+    var editorEl = document.querySelector('#editor .ql-editor');
+    // Default line spacing
+    editorEl.style.lineHeight = '1.5';
+
+    lineSpacingBtns.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var spacing = btn.getAttribute('data-spacing');
+        editorEl.style.lineHeight = spacing;
+        // Highlight selected
+        lineSpacingBtns.forEach(function (b) {
+          b.style.borderColor = '#d1d9e0';
+          b.style.background = '#f6f8fa';
+        });
+        btn.style.borderColor = '#2563eb';
+        btn.style.background = '#eff6ff';
+      });
     });
 
     // --- SDK helpers ---
