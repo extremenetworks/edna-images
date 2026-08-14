@@ -664,6 +664,16 @@
     // --- Background Color Picker ---
     var bgColorBtn = document.getElementById('bg-color-btn');
     var bgColorGrid = document.getElementById('bg-color-grid');
+    var bgStorageKey = 'sigma-editor-bg-' + (new URLSearchParams(window.location.search).get('id') || 'default');
+
+    // Restore saved BG color
+    var savedBg = localStorage.getItem(bgStorageKey);
+    if (savedBg) {
+      document.body.style.backgroundColor = savedBg;
+      bgColorBtn.style.background = savedBg === 'transparent' ? 'repeating-conic-gradient(#ccc 0% 25%, transparent 0% 50%) 50%/10px 10px' : savedBg;
+      var darkColors = ['#20004c','#5b059c','#240691','#002060','#440099','#1F004E','#000000'];
+      if (darkColors.indexOf(savedBg) !== -1) document.body.style.color = '#ffffff';
+    }
 
     bgColorBtn.addEventListener('mousedown', function (e) {
       e.stopPropagation();
@@ -682,6 +692,7 @@
         document.body.style.backgroundColor = color;
         bgColorBtn.style.background = color === 'transparent' ? 'repeating-conic-gradient(#ccc 0% 25%, transparent 0% 50%) 50%/10px 10px' : color;
         bgColorGrid.style.display = 'none';
+        localStorage.setItem(bgStorageKey, color);
         var darkColors = ['#20004c','#5b059c','#240691','#002060','#440099','#1F004E','#000000'];
         if (darkColors.indexOf(color) !== -1) {
           document.body.style.color = '#ffffff';
@@ -929,9 +940,8 @@
       isLoading = true;
       var trimmed = content.trim();
       if (trimmed.startsWith('<')) {
-        // Already Quill HTML — use clipboard convert to preserve images and formatting
-        var delta = quill.clipboard.convert({ html: content });
-        quill.setContents(delta);
+        // Already Quill HTML — load directly to preserve all inline styles
+        quill.root.innerHTML = content;
       } else {
         // Markdown — parse to HTML then use clipboard to convert lists properly
         var html = DOMPurify.sanitize(marked.parse(content));
