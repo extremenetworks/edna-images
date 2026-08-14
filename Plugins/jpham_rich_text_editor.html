@@ -639,18 +639,23 @@
     var bgColorBtn = document.getElementById('bg-color-btn');
     var bgColorGrid = document.getElementById('bg-color-grid');
 
-    bgColorBtn.addEventListener('click', function () {
-      bgColorGrid.style.display = bgColorGrid.style.display === 'none' ? 'grid' : 'none';
-      colorGrid.style.display = 'none';
+    bgColorBtn.addEventListener('mousedown', function (e) {
+      e.stopPropagation();
+      if (bgColorGrid.style.display === 'none' || bgColorGrid.style.display === '') {
+        bgColorGrid.style.display = 'grid';
+        colorGrid.style.display = 'none';
+      } else {
+        bgColorGrid.style.display = 'none';
+      }
     });
 
     document.querySelectorAll('.bg-swatch').forEach(function (swatch) {
-      swatch.addEventListener('click', function () {
+      swatch.addEventListener('mousedown', function (e) {
+        e.stopPropagation();
         var color = swatch.getAttribute('data-color');
         document.body.style.backgroundColor = color;
         bgColorBtn.style.background = color === 'transparent' ? 'repeating-conic-gradient(#ccc 0% 25%, transparent 0% 50%) 50%/10px 10px' : color;
         bgColorGrid.style.display = 'none';
-        // Adjust text for dark backgrounds
         if (color === '#20004c') {
           document.body.style.color = '#ffffff';
         } else {
@@ -659,8 +664,7 @@
       });
     });
 
-    // Close bg grid when clicking elsewhere
-    document.addEventListener('click', function (e) {
+    document.addEventListener('mousedown', function (e) {
       if (!bgColorBtn.contains(e.target) && !bgColorGrid.contains(e.target)) {
         bgColorGrid.style.display = 'none';
       }
