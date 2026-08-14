@@ -175,7 +175,8 @@
       }
       panel.push(
         { name: 'displayTitle', type: 'text', label: 'Display Title' },
-        { name: 'showTitle', type: 'checkbox', label: 'Show Title' }
+        { name: 'showTitle', type: 'checkbox', label: 'Show Title' },
+        { name: 'bgColor', type: 'text', label: 'Background Color (hex)' }
       );
       client.config.configureEditorPanel(panel);
     }
@@ -250,6 +251,13 @@
         titleEl.classList.add('visible');
       } else {
         titleEl.classList.remove('visible');
+      }
+
+      // Apply background color
+      if (config.bgColor) {
+        document.body.style.backgroundColor = config.bgColor;
+      } else {
+        document.body.style.backgroundColor = '#ffffff';
       }
 
       var useVariable = config.inputMode === 'Control Variable';
