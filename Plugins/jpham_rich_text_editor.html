@@ -431,7 +431,7 @@
         { name: 'onSave', type: 'action-trigger', label: 'On Save Action' },
         { name: 'editorTitle', type: 'text', label: 'Editor Title' },
         { name: 'showTitle', type: 'checkbox', label: 'Show Title' },
-        { name: 'bgColor', type: 'text', label: 'Background Color (hex)' }
+        { name: 'bgColor', type: 'radio', values: ['White', 'Light Gray', 'Light Blue', 'Light Green', 'Light Yellow', 'Light Purple', 'Dark Purple', 'Transparent'], singleLine: true, label: 'Background Color' }
       );
       client.config.configureEditorPanel(panel);
     }
@@ -868,10 +868,16 @@
       }
 
       // Apply background color
-      if (config.bgColor) {
-        document.body.style.backgroundColor = config.bgColor;
+      var bgColorMap = {
+        'White': '#ffffff', 'Light Gray': '#f6f8fa', 'Light Blue': '#eff6ff',
+        'Light Green': '#CCEEDF', 'Light Yellow': '#FEF2D2', 'Light Purple': '#E4D7F9',
+        'Dark Purple': '#20004c', 'Transparent': 'transparent'
+      };
+      document.body.style.backgroundColor = bgColorMap[config.bgColor] || '#ffffff';
+      if (config.bgColor === 'Dark Purple') {
+        document.body.style.color = '#ffffff';
       } else {
-        document.body.style.backgroundColor = '#ffffff';
+        document.body.style.color = '#24292f';
       }
 
       var mode = config.inputMode === 'Blank Document' ? 'blank' : 'data';
