@@ -182,7 +182,8 @@
       }
       panel.push(
         { name: 'displayTitle', type: 'text', label: 'Display Title' },
-        { name: 'showTitle', type: 'checkbox', label: 'Show Title' }
+        { name: 'showTitle', type: 'checkbox', label: 'Show Title' },
+        { name: 'bgColor', type: 'radio', values: ['White', 'Light Gray', 'Light Blue', 'Light Green', 'Light Yellow', 'Light Purple', 'Dark Purple', 'Transparent'], singleLine: true, label: 'Background Color' }
       );
       client.config.configureEditorPanel(panel);
     }
@@ -258,6 +259,17 @@
         titleEl.classList.add('visible');
       } else {
         titleEl.classList.remove('visible');
+      }
+
+      // Apply background color from config
+      var bgColorMap = {
+        'White': '#ffffff', 'Light Gray': '#f6f8fa', 'Light Blue': '#eff6ff',
+        'Light Green': '#CCEEDF', 'Light Yellow': '#FEF2D2', 'Light Purple': '#E4D7F9',
+        'Dark Purple': '#20004c', 'Transparent': 'transparent'
+      };
+      if (config.bgColor && bgColorMap[config.bgColor]) {
+        document.body.style.backgroundColor = bgColorMap[config.bgColor];
+        document.body.style.color = config.bgColor === 'Dark Purple' ? '#ffffff' : '#24292f';
       }
 
       var useVariable = config.inputMode === 'Control Variable';
