@@ -198,11 +198,14 @@
     let currentConfig = null;
 
     // --- Refresh Button ---
-    document.getElementById('refresh-btn').addEventListener('click', function () {
+    document.getElementById('refresh-btn').addEventListener('mousedown', function (e) {
+      e.preventDefault();
       if (unsubData) { unsubData(); unsubData = null; }
       window._lastSourceKey = null;
       if (currentConfig) {
         handleConfig(currentConfig);
+      } else {
+        location.reload();
       }
     });
     var displayPluginId = new URLSearchParams(window.location.search).get('id') || 'default';
