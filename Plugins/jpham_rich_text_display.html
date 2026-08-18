@@ -323,6 +323,7 @@
         };
 
         unsubData = client.elements.subscribeToElementData(config.source, (data) => {
+          console.log('[Display] Data received, keys:', Object.keys(data));
           lastData = data;
           var columnData = data[config.markdownColumn];
           if (!columnData || columnData.length === 0) { showPlaceholder('No comments yet'); return; }
