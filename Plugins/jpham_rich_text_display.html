@@ -282,7 +282,10 @@
         sectionBar.style.display = config.hideSection ? 'none' : 'flex';
       }
 
-      // Always resubscribe to get fresh data
+      // Only resubscribe if the data source actually changed
+      if (newSourceKey === window._lastSourceKey && unsubData) {
+        return;
+      }
       window._lastSourceKey = newSourceKey;
 
       cleanup();
