@@ -291,7 +291,7 @@
         if (!config.variableSource) { showPlaceholder('Select the text control element.'); return; }
         unsubData = client.elements.subscribeToElementData(config.variableSource, (data) => {
           var keys = Object.keys(data);
-          if (keys.length === 0) { showPlaceholder('No data from control.'); return; }
+          if (keys.length === 0) { showPlaceholder('No comments yet'); return; }
           var firstCol = data[keys[0]];
           if (!firstCol || firstCol.length === 0) { showPlaceholder('Control is empty.'); return; }
           renderContent(String(firstCol[0]));
@@ -314,7 +314,7 @@
             for (var i = 0; i < sectionData.length; i++) {
               if (String(sectionData[i]).trim() === selectedSection) { rowIndex = i; break; }
             }
-            if (rowIndex === -1) { showPlaceholder('No data for "' + selectedSection + '".'); return; }
+            if (rowIndex === -1) { showPlaceholder('No comments yet'); return; }
             renderContent(columnData[rowIndex]);
           }
         };
@@ -322,7 +322,7 @@
         unsubData = client.elements.subscribeToElementData(config.source, (data) => {
           lastData = data;
           var columnData = data[config.markdownColumn];
-          if (!columnData || columnData.length === 0) { showPlaceholder('No data available.'); return; }
+          if (!columnData || columnData.length === 0) { showPlaceholder('No comments yet'); return; }
 
           // If section column configured, filter by section
           if (config.sectionColumn) {
@@ -341,7 +341,7 @@
                     break;
                   }
                 }
-                if (rowIndex === -1) { showPlaceholder('No data for section "' + fixedSection + '".'); return; }
+                if (rowIndex === -1) { showPlaceholder('No comments yet'); return; }
                 renderContent(columnData[rowIndex]);
               } else {
                 // No config value — show dropdown for manual selection
