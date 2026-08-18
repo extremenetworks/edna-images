@@ -143,7 +143,7 @@
 <body>
   <div class="container">
     <div id="display-title" class="display-title"></div>
-    <button id="refresh-btn" style="position:absolute;top:4px;right:4px;padding:2px 6px;border:1px solid #d1d9e0;border-radius:3px;background:#f6f8fa;cursor:pointer;font-size:10px;color:#999;opacity:0.6;z-index:10;" title="Refresh data">&#8635;</button>
+    <button id="refresh-btn" onclick="location.reload()" style="position:absolute;top:4px;right:4px;padding:2px 6px;border:1px solid #d1d9e0;border-radius:3px;background:#f6f8fa;cursor:pointer;font-size:10px;color:#999;opacity:0.6;z-index:10;" title="Refresh data">&#8635;</button>
     <div id="section-bar" class="section-bar" style="display:none;">
       <label>Section:</label>
       <select id="section-select"></select>
@@ -196,18 +196,6 @@
     // --- Data ---
     let unsubData = null;
     let currentConfig = null;
-
-    // --- Refresh Button ---
-    document.getElementById('refresh-btn').addEventListener('mousedown', function (e) {
-      e.preventDefault();
-      if (unsubData) { unsubData(); unsubData = null; }
-      window._lastSourceKey = null;
-      if (currentConfig) {
-        handleConfig(currentConfig);
-      } else {
-        location.reload();
-      }
-    });
     var displayPluginId = new URLSearchParams(window.location.search).get('id') || 'default';
     var displayStorageKey = 'sigma-display-section-' + displayPluginId;
     var savedSection = localStorage.getItem(displayStorageKey) || '';
