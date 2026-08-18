@@ -23,6 +23,7 @@
       display: flex;
       flex-direction: column;
       height: 100%;
+      position: relative;
     }
 
     #content {
@@ -142,12 +143,10 @@
 <body>
   <div class="container">
     <div id="display-title" class="display-title"></div>
-    <div style="display:flex;align-items:center;gap:8px;padding:4px 8px;">
-      <div id="section-bar" class="section-bar" style="display:none;flex:1;margin:0;padding:0;border:none;">
-        <label>Section:</label>
-        <select id="section-select"></select>
-      </div>
-      <button id="refresh-btn" style="margin-left:auto;padding:4px 10px;border:1px solid #d1d9e0;border-radius:4px;background:#f6f8fa;cursor:pointer;font-size:12px;color:#656d76;" title="Refresh data">&#8635; Refresh</button>
+    <button id="refresh-btn" style="position:absolute;top:4px;right:4px;padding:2px 6px;border:1px solid #d1d9e0;border-radius:3px;background:#f6f8fa;cursor:pointer;font-size:10px;color:#999;opacity:0.6;z-index:10;" title="Refresh data">&#8635;</button>
+    <div id="section-bar" class="section-bar" style="display:none;">
+      <label>Section:</label>
+      <select id="section-select"></select>
     </div>
     <div id="content">
       <div class="placeholder">Select a data source to get started.</div>
