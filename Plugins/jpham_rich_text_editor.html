@@ -692,12 +692,8 @@
         sdkSetVariable(outputVarId, html);
 
         hasUnsavedChanges = false;
-        justSaved = true;
         loadedContent = html;
         setStatus('Saved', 'saved');
-
-        // Reset justSaved after 5 seconds so editor accepts fresh data
-        setTimeout(function () { justSaved = false; }, 5000);
 
         if (onSaveId) {
           // Delay action trigger to prevent Sigma from closing the panel immediately
@@ -771,29 +767,16 @@
               rowIndex = -1;
               var targetLower = targetSection.toLowerCase();
               for (var i = 0; i < sectionData.length; i++) {
-                if (String(sectionData[i]).trim().toLowerCase() === targetLower) { rowIndex = i; }
+                if (String(sectionData[i]).trim().toLowerCase() === targetLower) { rowIndex = i; break; }
               }
               if (rowIndex === -1) { setStatus('No content for "' + targetSection + '" yet — ready to write', ''); forceReload = false; return; }
             }
           }
           var md = columnData[rowIndex];
           lastReceivedData = md;
-          console.log('[Editor] Data at row', rowIndex, ':', md ? md.substring(0, 50) : '(empty)', '| justSaved:', justSaved, '| loadedContent:', loadedContent ? loadedContent.substring(0, 30) : '(empty)');
-          // Don't overwrite editor with stale data right after saving
-          if (justSaved && md !== undefined) {
-            var currentHtml = quill.root.innerHTML;
-            // If the data from table matches what we just saved, keep it
-            // If it's different (old data), skip loading to preserve the save
-            if (md !== currentHtml && md !== loadedContent) {
-              // Data actually changed (e.g., region filter changed) - load it
-              console.log('[Editor] justSaved but data changed — loading new content');
-              justSaved = false;
-              loadContent(md);
-            } else {
-              console.log('[Editor] justSaved and data matches — skipping reload');
-            }
-            return;
-          }
+          loadContent(md);
+          forceReload = false;
+          setStatus('Refreshed', 'saved');
           console.log('[Editor] Loading content normally');
           loadContent(md);
           forceReload = false;
@@ -940,7 +923,8 @@
                 var targetLower = targetSection.toLowerCase();
                 for (var i = 0; i < sectionData.length; i++) {
                   if (String(sectionData[i]).trim().toLowerCase() === targetLower) {
-                    rowIndex = i;  // Keep scanning to get the last (newest) match
+                    rowIndex = i;
+                    break;  // Use first match (same as Display)
                   }
                 }
                 console.log('[Editor] Section filter:', targetSection, '| Rows:', sectionData.length, '| Match at:', rowIndex);
@@ -980,13 +964,8 @@
           }
 
           var md = columnData[rowIndex];
-          console.log('[Editor] Loading row', rowIndex, '| content:', md ? ('"' + md.substring(0, 80) + '"') : '(null/empty)', '| justSaved:', justSaved);
+          console.log('[Editor] Loading row', rowIndex, '| content:', md ? ('"' + md.substring(0, 80) + '"') : '(null/empty)');
           lastReceivedData = md;
-          // Don't overwrite editor right after saving (5s window)
-          if (justSaved) {
-            console.log('[Editor] Skipping load — just saved');
-            return;
-          }
           loadContent(md);
         });
       }
