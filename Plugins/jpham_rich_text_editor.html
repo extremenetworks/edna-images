@@ -872,6 +872,14 @@
         setupHint.classList.remove('visible');
       }
 
+      // Only resubscribe if data source config actually changed
+      var newSourceKey = 's:' + (config.source || '') + ':' + (config.markdownColumn || '') + ':' + (config.sectionColumn || '');
+      if (newSourceKey === window._editorSourceKey && unsubData) {
+        // Source didn't change — keep subscription alive, don't reload
+        return;
+      }
+      window._editorSourceKey = newSourceKey;
+
       if (unsubData) { unsubData(); unsubData = null; }
       justSaved = false;
       if (mode === 'data' && config.source && config.markdownColumn) {
