@@ -696,6 +696,9 @@
         loadedContent = html;
         setStatus('Saved', 'saved');
 
+        // Reset justSaved after 5 seconds so editor accepts fresh data
+        setTimeout(function () { justSaved = false; }, 5000);
+
         if (onSaveId) {
           // Delay action trigger to prevent Sigma from closing the panel immediately
           setTimeout(function () {
