@@ -978,11 +978,15 @@
           }
 
           var md = columnData[rowIndex];
-          console.log('[Editor] Loading row', rowIndex, '| content:', md ? ('"' + md.substring(0, 80) + '"') : '(null/empty)', '| justSaved:', justSaved);
+          console.log('[Editor] Loading row', rowIndex, '| content:', md ? ('"' + md.substring(0, 80) + '"') : '(null/empty)', '| justSaved:', justSaved, '| unsaved:', hasUnsavedChanges);
           lastReceivedData = md;
-          // Don't overwrite editor right after saving
+          // Don't overwrite editor if user has unsaved changes or just saved
           if (justSaved) {
             console.log('[Editor] Skipping load — just saved');
+            return;
+          }
+          if (hasUnsavedChanges) {
+            console.log('[Editor] Skipping load — has unsaved changes');
             return;
           }
           loadContent(md);
