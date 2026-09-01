@@ -875,14 +875,6 @@
         setupHint.classList.remove('visible');
       }
 
-      // Only resubscribe if data source config actually changed
-      var newSourceKey = 's:' + (config.source || '') + ':' + (config.markdownColumn || '') + ':' + (config.sectionColumn || '');
-      if (newSourceKey === window._editorSourceKey && unsubData) {
-        // Source didn't change — keep subscription alive, don't reload
-        return;
-      }
-      window._editorSourceKey = newSourceKey;
-
       if (unsubData) { unsubData(); unsubData = null; }
       justSaved = false;
       if (mode === 'data' && config.source && config.markdownColumn) {
@@ -989,15 +981,11 @@
           }
 
           var md = columnData[rowIndex];
-          console.log('[Editor] Loading row', rowIndex, '| content:', md ? ('"' + md.substring(0, 80) + '"') : '(null/empty)', '| justSaved:', justSaved, '| unsaved:', hasUnsavedChanges);
+          console.log('[Editor] Loading row', rowIndex, '| content:', md ? ('"' + md.substring(0, 80) + '"') : '(null/empty)', '| justSaved:', justSaved);
           lastReceivedData = md;
-          // Don't overwrite editor if user has unsaved changes or just saved
+          // Don't overwrite editor right after saving (5s window)
           if (justSaved) {
             console.log('[Editor] Skipping load — just saved');
-            return;
-          }
-          if (hasUnsavedChanges) {
-            console.log('[Editor] Skipping load — has unsaved changes');
             return;
           }
           loadContent(md);
