@@ -83,13 +83,13 @@
       border-left: 0.25em solid #d1d9e0;
       margin-bottom: 16px;
     }
-    #content ul, #content ol { padding-left: 2em; margin-bottom: 16px; }
-    #content li { margin-bottom: 4px; padding-left: 1.5em; }
+    #content ul, #content ol { padding-left: 0.5em; margin-bottom: 16px; }
+    #content li { margin-bottom: 4px; padding-left: 0; }
     #content li + li { margin-top: 4px; }
     /* Quill list rendering */
     #content li[data-list] { display: list-item; list-style: none; }
     #content li .ql-ui { display: none; }
-    #content ol { list-style: none; padding-left: 1.5em; margin-bottom: 16px; counter-reset: list-counter; }
+    #content ol { list-style: none; padding-left: 0.5em; margin-bottom: 16px; counter-reset: list-counter; }
     #content ol li[data-list="ordered"] { counter-increment: list-counter; }
     #content ol li[data-list="ordered"]::before { content: counter(list-counter) ". "; font-weight: normal; }
     #content ol li[data-list="bullet"]::before { content: "\2022  "; }
