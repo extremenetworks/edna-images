@@ -178,6 +178,8 @@
           { name: 'markdownColumn', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['text'], label: 'Markdown Column' },
           { name: 'sectionColumn', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['text'], label: 'Section Column (optional)' },
           { name: 'sectionValue', type: 'text', label: 'Section Value' },
+          { name: 'sectionColumn2', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['text'], label: 'Section Column 2 (optional)' },
+          { name: 'sectionValue2', type: 'text', label: 'Section Value 2' },
           { name: 'hideSection', type: 'checkbox', label: 'Hide Section Selector' }
         );
       }
@@ -331,9 +333,11 @@
           // If section column configured, filter by section
           if (config.sectionColumn) {
             var sectionData = data[config.sectionColumn];
+            var sectionData2 = config.sectionColumn2 ? data[config.sectionColumn2] : null;
             if (sectionData) {
               // Use config sectionValue if set (persists in Sigma), otherwise use dropdown
               var fixedSection = config.sectionValue ? String(config.sectionValue).trim() : null;
+              var fixedSection2 = config.sectionValue2 ? String(config.sectionValue2).trim() : null;
 
               if (fixedSection) {
                 // Section set via config — hide dropdown, use fixed value
@@ -341,6 +345,10 @@
                 var rowIndex = -1;
                 for (var i = 0; i < sectionData.length; i++) {
                   if (String(sectionData[i]).trim() === fixedSection) {
+                    // If second section column is configured, also check it
+                    if (fixedSection2 && sectionData2) {
+                      if (String(sectionData2[i]).trim() !== fixedSection2) continue;
+                    }
                     rowIndex = i;
                     break;
                   }

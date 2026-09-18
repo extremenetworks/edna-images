@@ -425,6 +425,8 @@
           { name: 'markdownColumn', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['text'], label: 'Markdown Column' },
           { name: 'sectionColumn', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['text'], label: 'Section Column (optional)' },
           { name: 'sectionValue', type: 'text', label: 'Section Value' },
+          { name: 'sectionColumn2', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['text'], label: 'Section Column 2 (optional)' },
+          { name: 'sectionValue2', type: 'text', label: 'Section Value 2' },
           { name: 'hideSection', type: 'checkbox', label: 'Hide Section Selector' }
         );
       }
@@ -942,8 +944,10 @@
           var rowIndex = 0;
           if (config.sectionColumn) {
             var sectionData = data[config.sectionColumn];
+            var sectionData2 = config.sectionColumn2 ? data[config.sectionColumn2] : null;
             if (sectionData) {
               var fixedSection = config.sectionValue ? String(config.sectionValue).trim() : null;
+              var fixedSection2 = config.sectionValue2 ? String(config.sectionValue2).trim() : null;
               var targetSection = fixedSection || editorSavedSection || '';
 
               if (targetSection) {
@@ -953,13 +957,18 @@
 
                 rowIndex = -1;
                 var targetLower = targetSection.toLowerCase();
+                var targetLower2 = fixedSection2 ? fixedSection2.toLowerCase() : null;
                 for (var i = 0; i < sectionData.length; i++) {
                   if (String(sectionData[i]).trim().toLowerCase() === targetLower) {
+                    // If second section column is configured, also check it
+                    if (targetLower2 && sectionData2) {
+                      if (String(sectionData2[i]).trim().toLowerCase() !== targetLower2) continue;
+                    }
                     rowIndex = i;
-                    break;  // Use first match (same as Display)
+                    break;
                   }
                 }
-                console.log('[Editor] Section filter:', targetSection, '| Rows:', sectionData.length, '| Match at:', rowIndex);
+                console.log('[Editor] Section filter:', targetSection, (fixedSection2 ? '+ ' + fixedSection2 : ''), '| Rows:', sectionData.length, '| Match at:', rowIndex);
                 if (rowIndex === -1) {
                   lastReceivedData = null;
                   // No data for this section yet - show empty editor ready to write
