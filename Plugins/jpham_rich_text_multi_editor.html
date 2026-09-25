@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Multi-Section Editor</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/@sigmacomputing/plugin@1.2.0/dist/umd/sigmacomputing-plugin.umd.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
+  <script src="https://unpkg.com/dompurify@3.2.6/dist/purify.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; font-size: 14px; color: #24292f; background-color: #ffffff; }
+    .container { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
+    .editor-title { display: none; padding: 8px 12px; font-weight: 600; font-size: 14px; color: #24292f; background: #f6f8fa; border-bottom: 1px solid #d1d9e0; }
+    .editor-title.visible { display: block; }
+    .toolbar-wrapper { border-bottom: 1px solid #d1d9e0; background: #f6f8fa; overflow: visible; position: relative; z-index: 10; }
+    .ql-toolbar.ql-snow { border: none; padding: 6px 8px; }
+    .sections-area { flex: 1; overflow-y: auto; }
+    .section-block { border-bottom: 2px solid #d1d9e0; }
+    .section-block:last-child { border-bottom: none; }
+    .section-header { padding: 6px 12px; font-weight: 600; font-size: 13px; color: #1F004E; background: #E8E5ED; border-bottom: 1px solid #d1d9e0; cursor: default; }
+    .section-editor { min-height: 100px; }
+    .section-editor .ql-editor { min-height: 80px; padding: 10px 12px; font-size: 14px; line-height: 1.5; }
+    .section-editor .ql-editor:focus { outline: 2px solid #2563eb; outline-offset: -2px; }
+    .footer { flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; border-top: 1px solid #d1d9e0; background: #f6f8fa; }
+    .font-size-input { height: 24px; border: 1px solid #d1d9e0; border-radius: 3px; padding: 0 4px; font-size: 12px; color: #24292f; width: 50px; }
+    .color-picker-wrapper { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .color-dropdown-wrapper { position: relative; }
+    .color-btn { width: 22px; height: 22px; border: 1px solid #d1d9e0; border-radius: 3px; cursor: pointer; }
+    .color-grid { position: absolute; bottom: 28px; left: 0; background: #fff; border: 1px solid #d1d9e0; border-radius: 6px; padding: 6px; display: grid; grid-template-columns: repeat(9, 18px); gap: 3px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 1000; }
+    .cg-swatch { width: 18px; height: 18px; border-radius: 3px; border: 1px solid #d1d9e0; cursor: pointer; }
+    .save-btn { padding: 6px 16px; background-color: #2563eb; color: white; border: none; border-radius: 4px; font-size: 13px; font-weight: 500; cursor: pointer; }
+    .save-btn:hover { background-color: #1d4ed8; }
+    .save-btn:disabled { background-color: #94a3b8; cursor: not-allowed; }
+    .refresh-btn { background-color: #f6f8fa; color: #24292f; border: 1px solid #d1d9e0; border-radius: 4px; padding: 4px 10px; font-size: 12px; cursor: pointer; }
+    .refresh-btn:hover { background-color: #e8e8e8; }
+    .status { font-size: 12px; color: #656d76; }
+    .status.saved { color: #16a34a; }
+    .status.error { color: #dc2626; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div id="editor-title" class="editor-title"></div>
+    <div class="toolbar-wrapper">
+      <div id="toolbar">
+        <span class="ql-formats">
+          <select class="ql-header"><option value="1">H1</option><option value="2">H2</option><option value="3">H3</option><option selected>Normal</option></select>
+        </span>
+        <span class="ql-formats">
+          <button class="ql-bold"></button><button class="ql-italic"></button><button class="ql-underline"></button><button class="ql-strike"></button>
+        </span>
+        <span class="ql-formats">
+          <button class="ql-list" value="ordered"></button><button class="ql-list" value="bullet"></button>
+          <button class="ql-indent" value="-1"></button><button class="ql-indent" value="+1"></button>
+        </span>
+        <span class="ql-formats">
+          <button class="ql-align" value=""></button><button class="ql-align" value="center"></button><button class="ql-align" value="right"></button>
+          <span style="position:relative;display:inline-block;">
+            <button id="line-spacing-btn" type="button" title="Line spacing" style="width:28px;height:24px;padding:0;border:none;background:none;cursor:pointer;font-size:16px;vertical-align:middle;">&#8661;</button>
+            <div id="line-spacing-menu" style="display:none;position:absolute;top:28px;left:0;background:#fff;border:1px solid #d1d9e0;border-radius:4px;box-shadow:0 2px 8px rgba(0,0,0,0.15);z-index:100;min-width:60px;">
+              <div class="ls-option" data-spacing="1" style="padding:5px 12px;cursor:pointer;font-size:12px;">1.0</div>
+              <div class="ls-option" data-spacing="1.15" style="padding:5px 12px;cursor:pointer;font-size:12px;">1.15</div>
+              <div class="ls-option" data-spacing="1.5" style="padding:5px 12px;cursor:pointer;font-size:12px;background:#eff6ff;">1.5</div>
+              <div class="ls-option" data-spacing="2" style="padding:5px 12px;cursor:pointer;font-size:12px;">2.0</div>
+              <div class="ls-option" data-spacing="2.5" style="padding:5px 12px;cursor:pointer;font-size:12px;">2.5</div>
+              <div class="ls-option" data-spacing="3" style="padding:5px 12px;cursor:pointer;font-size:12px;">3.0</div>
+            </div>
+          </span>
+        </span>
+        <span class="ql-formats"><button class="ql-link"></button></span>
+        <span class="ql-formats"><button class="ql-clean"></button></span>
+      </div>
+    </div>
+
+    <div class="sections-area">
+      <div class="section-block">
+        <div class="section-header" id="header-1">Section 1</div>
+        <div class="section-editor" id="editor-1"></div>
+      </div>
+      <div class="section-block">
+        <div class="section-header" id="header-2">Section 2</div>
+        <div class="section-editor" id="editor-2"></div>
+      </div>
+      <div class="section-block">
+        <div class="section-header" id="header-3">Section 3</div>
+        <div class="section-editor" id="editor-3"></div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <div class="color-picker-wrapper">
+        <select id="font-size-input" class="font-size-input" title="Font size (px)">
+          <option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option>
+          <option value="14" selected>14</option><option value="16">16</option><option value="18">18</option><option value="20">20</option>
+          <option value="24">24</option><option value="28">28</option><option value="32">32</option><option value="36">36</option>
+          <option value="48">48</option><option value="64">64</option><option value="72">72</option>
+        </select>
+        <div class="color-dropdown-wrapper">
+          <button id="color-btn" class="color-btn" title="Text color" style="background:#20004c;"></button>
+          <div id="color-grid" class="color-grid" style="display:none;">
+            <span class="cg-swatch" data-color="#20004c" style="background:#20004c"></span>
+            <span class="cg-swatch" data-color="#5b059c" style="background:#5b059c"></span>
+            <span class="cg-swatch" data-color="#7519f9" style="background:#7519f9"></span>
+            <span class="cg-swatch" data-color="#7d76f2" style="background:#7d76f2"></span>
+            <span class="cg-swatch" data-color="#240691" style="background:#240691"></span>
+            <span class="cg-swatch" data-color="#0f82f4" style="background:#0f82f4"></span>
+            <span class="cg-swatch" data-color="#9ce0f1" style="background:#9ce0f1"></span>
+            <span class="cg-swatch" data-color="#fe8dee" style="background:#fe8dee"></span>
+            <span class="cg-swatch" data-color="#ffc000" style="background:#ffc000"></span>
+            <span class="cg-swatch" data-color="#00b050" style="background:#00b050"></span>
+            <span class="cg-swatch" data-color="#CCEEDF" style="background:#CCEEDF"></span>
+            <span class="cg-swatch" data-color="#66CC9F" style="background:#66CC9F"></span>
+            <span class="cg-swatch" data-color="#00AA60" style="background:#00AA60"></span>
+            <span class="cg-swatch" data-color="#CCF1F3" style="background:#CCF1F3"></span>
+            <span class="cg-swatch" data-color="#7FDDE2" style="background:#7FDDE2"></span>
+            <span class="cg-swatch" data-color="#00BBC5" style="background:#00BBC5"></span>
+            <span class="cg-swatch" data-color="#D9E6FF" style="background:#D9E6FF"></span>
+            <span class="cg-swatch" data-color="#81ABFF" style="background:#81ABFF"></span>
+            <span class="cg-swatch" data-color="#002060" style="background:#002060"></span>
+            <span class="cg-swatch" data-color="#E7E7FF" style="background:#E7E7FF"></span>
+            <span class="cg-swatch" data-color="#B8B8FF" style="background:#B8B8FF"></span>
+            <span class="cg-swatch" data-color="#8888FF" style="background:#8888FF"></span>
+            <span class="cg-swatch" data-color="#E4D7F9" style="background:#E4D7F9"></span>
+            <span class="cg-swatch" data-color="#A67AEB" style="background:#A67AEB"></span>
+            <span class="cg-swatch" data-color="#440099" style="background:#440099"></span>
+            <span class="cg-swatch" data-color="#E8E5ED" style="background:#E8E5ED"></span>
+            <span class="cg-swatch" data-color="#8F7FA6" style="background:#8F7FA6"></span>
+            <span class="cg-swatch" data-color="#1F004E" style="background:#1F004E"></span>
+            <span class="cg-swatch" data-color="#FCC222" style="background:#FCC222"></span>
+            <span class="cg-swatch" data-color="#FDE090" style="background:#FDE090"></span>
+            <span class="cg-swatch" data-color="#FEF2D2" style="background:#FEF2D2"></span>
+            <span class="cg-swatch" data-color="#FF5959" style="background:#FF5959"></span>
+            <span class="cg-swatch" data-color="#FF8A8A" style="background:#FF8A8A"></span>
+            <span class="cg-swatch" data-color="#FFDDDD" style="background:#FFDDDD"></span>
+            <span class="cg-swatch" data-color="#000000" style="background:#000000"></span>
+            <span class="cg-swatch" data-color="#ffffff" style="background:#ffffff"></span>
+          </div>
+        </div>
+        <input type="color" id="custom-color" value="#24292f" title="Pick a color" style="width:20px;height:20px;border:1px solid #d1d9e0;border-radius:3px;padding:0;cursor:pointer;" />
+      </div>
+      <span id="status" class="status"></span>
+      <button id="paste-btn" class="refresh-btn">Paste</button>
+      <button id="save-btn" class="save-btn" disabled>Save All</button>
+    </div>
+  </div>
+
+  <script>
+    const { client } = SigmaPlugin;
+
+    // --- Config Panel ---
+    client.config.configureEditorPanel([
+      { name: 'source', type: 'element' },
+      { name: 'markdownColumn', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['text'], label: 'Content Column' },
+      { name: 'sectionColumn', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['text'], label: 'Section Column' },
+      { name: 'section1Name', type: 'text', label: 'Section 1 Name' },
+      { name: 'section1Title', type: 'text', label: 'Section 1 Header' },
+      { name: 'section2Name', type: 'text', label: 'Section 2 Name' },
+      { name: 'section2Title', type: 'text', label: 'Section 2 Header' },
+      { name: 'section3Name', type: 'text', label: 'Section 3 Name' },
+      { name: 'section3Title', type: 'text', label: 'Section 3 Header' },
+      { name: 'outputVar1', type: 'variable', allowedTypes: ['text'], label: 'Output Variable (Section 1)' },
+      { name: 'outputVar2', type: 'variable', allowedTypes: ['text'], label: 'Output Variable (Section 2)' },
+      { name: 'outputVar3', type: 'variable', allowedTypes: ['text'], label: 'Output Variable (Section 3)' },
+      { name: 'onSave', type: 'action-trigger', label: 'On Save Action' },
+      { name: 'editorTitle', type: 'text', label: 'Editor Title' },
+      { name: 'showTitle', type: 'checkbox', label: 'Show Title' }
+    ]);
+
+    // --- Quill Setup ---
+    var SizeStyle = Quill.import('attributors/style/size');
+    SizeStyle.whitelist = null;
+    Quill.register(SizeStyle, true);
+    var AlignStyle = Quill.import('attributors/style/align');
+    Quill.register(AlignStyle, true);
+
+    // Create 3 Quill editors, all sharing the same toolbar
+    var quills = [];
+    var activeQuill = null;
+
+    for (var idx = 1; idx <= 3; idx++) {
+      var q = new Quill('#editor-' + idx, {
+        theme: 'snow',
+        modules: { toolbar: false },
+        placeholder: 'Start writing...'
+      });
+      quills.push(q);
+    }
+
+    // Attach shared toolbar to active editor
+    var toolbarModule = new Quill('#editor-1', { theme: 'snow', modules: { toolbar: '#toolbar' } });
+    // Remove the extra editor this created
+    var extraEditor = document.querySelectorAll('#editor-1 .ql-editor');
+    if (extraEditor.length > 1) extraEditor[1].parentNode.removeChild(extraEditor[1]);
+
+    // Actually, let's use a different approach: manually link toolbar buttons
+    // Override: attach toolbar to whichever editor is focused
+    activeQuill = quills[0];
+
+    function linkToolbarToQuill(q) {
+      activeQuill = q;
+    }
+
+    quills.forEach(function (q) {
+      q.root.addEventListener('focus', function () { linkToolbarToQuill(q); });
+    });
+
+    // Toolbar button handlers — apply to active editor
+    var toolbarEl = document.getElementById('toolbar');
+    toolbarEl.querySelectorAll('button.ql-bold').forEach(function (btn) {
+      btn.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); activeQuill.format('bold', !activeQuill.getFormat().bold); });
+    });
+    toolbarEl.querySelectorAll('button.ql-italic').forEach(function (btn) {
+      btn.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); activeQuill.format('italic', !activeQuill.getFormat().italic); });
+    });
+    toolbarEl.querySelectorAll('button.ql-underline').forEach(function (btn) {
+      btn.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); activeQuill.format('underline', !activeQuill.getFormat().underline); });
+    });
+    toolbarEl.querySelectorAll('button.ql-strike').forEach(function (btn) {
+      btn.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); activeQuill.format('strike', !activeQuill.getFormat().strike); });
+    });
+    toolbarEl.querySelectorAll('button.ql-list').forEach(function (btn) {
+      btn.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); var val = btn.value; var fmt = activeQuill.getFormat(); activeQuill.format('list', fmt.list === val ? false : val); });
+    });
+    toolbarEl.querySelectorAll('button.ql-indent').forEach(function (btn) {
+      btn.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); var val = parseInt(btn.value); var fmt = activeQuill.getFormat(); var cur = fmt.indent || 0; activeQuill.format('indent', Math.max(0, cur + val)); });
+    });
+    toolbarEl.querySelectorAll('button.ql-align').forEach(function (btn) {
+      btn.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); activeQuill.format('align', btn.value || false); });
+    });
+    toolbarEl.querySelectorAll('button.ql-link').forEach(function (btn) {
+      btn.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); var fmt = activeQuill.getFormat(); if (fmt.link) { activeQuill.format('link', false); } else { activeQuill.format('link', 'https://'); } });
+    });
+    toolbarEl.querySelectorAll('button.ql-clean').forEach(function (btn) {
+      btn.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); var range = activeQuill.getSelection(); if (range) activeQuill.removeFormat(range.index, range.length); });
+    });
+    toolbarEl.querySelectorAll('button.ql-blockquote').forEach(function (btn) {
+      btn.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); var fmt = activeQuill.getFormat(); activeQuill.format('blockquote', !fmt.blockquote); });
+    });
+    toolbarEl.querySelectorAll('button.ql-code-block').forEach(function (btn) {
+      btn.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); var fmt = activeQuill.getFormat(); activeQuill.format('code-block', !fmt['code-block']); });
+    });
+    toolbarEl.querySelectorAll('select.ql-header').forEach(function (sel) {
+      sel.addEventListener('change', function () { var val = sel.value ? parseInt(sel.value) : false; activeQuill.format('header', val); });
+    });
+
+    // Force lists flush left
+    var listStyle = document.createElement('style');
+    listStyle.textContent = '.ql-editor ol, .ql-editor ul { padding-left: 0 !important; } .ql-editor li { padding-left: 0 !important; }';
+    document.head.appendChild(listStyle);
+
+    // --- Font Size ---
+    var fontSizeInput = document.getElementById('font-size-input');
+    fontSizeInput.addEventListener('change', function () {
+      var size = fontSizeInput.value + 'px';
+      var range = activeQuill.getSelection();
+      if (range && range.length > 0) { activeQuill.formatText(range.index, range.length, 'size', size); }
+      else { activeQuill.format('size', size); }
+      activeQuill.focus();
+    });
+
+    // --- Text Color ---
+    var colorBtn = document.getElementById('color-btn');
+    var colorGrid = document.getElementById('color-grid');
+    var customColorPicker = document.getElementById('custom-color');
+    colorBtn.addEventListener('click', function () { colorGrid.style.display = colorGrid.style.display === 'none' ? 'grid' : 'none'; });
+    function applyColor(color) {
+      var range = activeQuill.getSelection();
+      if (range && range.length > 0) { activeQuill.formatText(range.index, range.length, 'color', color); }
+      else { activeQuill.format('color', color); }
+      colorBtn.style.background = color;
+      colorGrid.style.display = 'none';
+    }
+    document.querySelectorAll('.cg-swatch').forEach(function (s) {
+      s.addEventListener('click', function () { applyColor(s.getAttribute('data-color')); activeQuill.focus(); });
+    });
+    customColorPicker.addEventListener('input', function () { applyColor(customColorPicker.value); });
+
+    // --- Line Spacing ---
+    var lsBtn = document.getElementById('line-spacing-btn');
+    var lsMenu = document.getElementById('line-spacing-menu');
+    lsBtn.addEventListener('click', function () { lsMenu.style.display = lsMenu.style.display === 'none' ? 'block' : 'none'; });
+    document.querySelectorAll('.ls-option').forEach(function (opt) {
+      opt.addEventListener('click', function () {
+        var sp = opt.getAttribute('data-spacing');
+        document.querySelectorAll('.section-editor .ql-editor').forEach(function (el) { el.style.lineHeight = sp; });
+        document.querySelectorAll('.ls-option').forEach(function (o) { o.style.background = '#fff'; });
+        opt.style.background = '#eff6ff';
+        lsMenu.style.display = 'none';
+      });
+    });
+    document.addEventListener('click', function (e) {
+      if (!lsBtn.contains(e.target) && !lsMenu.contains(e.target)) lsMenu.style.display = 'none';
+    });
+
+    // --- SDK helpers ---
+    function sdkSetVariable(name, value) {
+      if (typeof client.setVariable === 'function') client.setVariable(name, value);
+      else if (client.config && typeof client.config.setVariable === 'function') client.config.setVariable(name, value);
+      else client.config.setKey(name, value);
+    }
+    function sdkTriggerAction(name) {
+      if (typeof client.triggerAction === 'function') client.triggerAction(name);
+      else if (client.config && typeof client.config.triggerAction === 'function') client.config.triggerAction(name);
+    }
+
+    // --- State ---
+    var saveBtn = document.getElementById('save-btn');
+    var statusEl = document.getElementById('status');
+    var hasUnsavedChanges = false;
+    var outputVars = [null, null, null];
+    var onSaveId = null;
+    var sectionNames = ['', '', ''];
+
+    function setStatus(msg, type) { statusEl.textContent = msg; statusEl.className = 'status' + (type ? ' ' + type : ''); }
+
+    quills.forEach(function (q) {
+      q.on('text-change', function () {
+        if (!hasUnsavedChanges) { hasUnsavedChanges = true; setStatus('Unsaved changes', ''); }
+        saveBtn.disabled = false;
+      });
+    });
+
+    // --- Save All ---
+    saveBtn.addEventListener('click', function () {
+      saveBtn.disabled = true;
+      setStatus('Saving...', '');
+      try {
+        for (var i = 0; i < 3; i++) {
+          if (outputVars[i]) {
+            var html = quills[i].root.innerHTML;
+            sdkSetVariable(outputVars[i], html);
+          }
+        }
+        hasUnsavedChanges = false;
+        setStatus('Saved', 'saved');
+        if (onSaveId) {
+          setTimeout(function () { sdkTriggerAction(onSaveId); }, 500);
+        }
+      } catch (err) {
+        setStatus('Save failed: ' + err.message, 'error');
+      }
+      saveBtn.disabled = false;
+    });
+
+    // --- Paste Button ---
+    document.getElementById('paste-btn').addEventListener('click', async function () {
+      try {
+        var text = await navigator.clipboard.readText();
+        if (text && activeQuill) {
+          var range = activeQuill.getSelection() || { index: activeQuill.getLength() };
+          activeQuill.insertText(range.index, text);
+        }
+      } catch (e) {}
+    });
+
+    // --- Config Subscription ---
+    var unsubData = null;
+
+    client.config.subscribe(function (config) {
+      // Title
+      var titleEl = document.getElementById('editor-title');
+      if (config.editorTitle && config.showTitle) { titleEl.textContent = config.editorTitle; titleEl.classList.add('visible'); }
+      else { titleEl.classList.remove('visible'); }
+
+      // Section headers
+      var titles = [config.section1Title || 'Section 1', config.section2Title || 'Section 2', config.section3Title || 'Section 3'];
+      sectionNames = [config.section1Name || '', config.section2Name || '', config.section3Name || ''];
+      for (var i = 0; i < 3; i++) {
+        document.getElementById('header-' + (i + 1)).textContent = titles[i];
+        // Hide section if no name configured
+        var block = document.getElementById('editor-' + (i + 1)).parentElement;
+        block.style.display = sectionNames[i] ? 'block' : 'none';
+      }
+
+      // Output variables
+      outputVars = [config.outputVar1 || null, config.outputVar2 || null, config.outputVar3 || null];
+      onSaveId = config.onSave || null;
+
+      // Load data
+      if (unsubData) { unsubData(); unsubData = null; }
+
+      if (config.source && config.markdownColumn && config.sectionColumn) {
+        unsubData = client.elements.subscribeToElementData(config.source, function (data) {
+          var columnData = data[config.markdownColumn];
+          var sectionData = data[config.sectionColumn];
+          if (!columnData || !sectionData) return;
+
+          for (var i = 0; i < 3; i++) {
+            if (!sectionNames[i]) continue;
+            var target = sectionNames[i].toLowerCase().trim();
+            var found = false;
+            for (var j = 0; j < sectionData.length; j++) {
+              if (String(sectionData[j]).trim().toLowerCase() === target) {
+                var content = columnData[j];
+                if (content && content.trim()) {
+                  quills[i].root.innerHTML = content;
+                } else {
+                  quills[i].setContents([]);
+                }
+                found = true;
+                break;
+              }
+            }
+            if (!found) quills[i].setContents([]);
+          }
+          hasUnsavedChanges = false;
+          setStatus('', '');
+        });
+      }
+    });
+  </script>
+</body>
+</html>
