@@ -3,1020 +3,413 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Markdown Editor</title>
+  <title>Multi-Section Editor</title>
   <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script src="https://unpkg.com/@sigmacomputing/plugin@1.2.0/dist/umd/sigmacomputing-plugin.umd.js"></script>
   <link href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
-  <script src="https://unpkg.com/marked@15.0.7/marked.min.js"></script>
-
   <script src="https://unpkg.com/dompurify@3.2.6/dist/purify.min.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-
-    html, body {
-      height: 100%;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-      font-size: 14px;
-      color: #24292f;
-      background-color: #ffffff;
-    }
-
-    .container {
-      display: flex;
-      flex-direction: column;
-      height: 100%;
-    }
-
-    .editor-wrapper {
-      flex: 1;
-      overflow: visible;
-      display: flex;
-      flex-direction: column;
-      position: relative;
-    }
-
-    #editor {
-      flex: 1;
-      overflow-y: auto;
-      font-size: 14px;
-      line-height: 1.6;
-    }
-
-    #editor .ql-editor {
-      min-height: 100%;
-      padding: 16px;
-    }
-
-    #editor .ql-editor ol, #editor .ql-editor ul {
-      padding-left: 0.5em !important;
-      margin-left: 0 !important;
-    }
-    #editor .ql-editor li {
-      padding-left: 0 !important;
-    }
-    #editor .ql-editor .ql-indent-1 { padding-left: 1.5em !important; }
-    #editor .ql-editor .ql-indent-2 { padding-left: 3em !important; }
-    #editor .ql-editor .ql-indent-3 { padding-left: 4.5em !important; }
-
-    .ql-toolbar.ql-snow {
-      border: none;
-      border-bottom: 1px solid #d1d9e0;
-      background: #f6f8fa;
-      padding: 6px 8px;
-      overflow: visible;
-      position: relative;
-      z-index: 10;
-    }
-
-    .font-size-input {
-      height: 24px;
-      border: 1px solid #d1d9e0;
-      border-radius: 3px;
-      padding: 0 4px;
-      font-size: 12px;
-      color: #24292f;
-      cursor: pointer;
-    }
-
-    .font-size-input:focus {
-      outline: none;
-      border-color: #2563eb;
-    }
-
-    .ql-container.ql-snow {
-      border: none;
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .footer {
-      flex-shrink: 0;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 8px 12px;
-      border-top: 1px solid #d1d9e0;
-      background: #f6f8fa;
-    }
-
-    .setup-hint {
-      display: none;
-      padding: 10px 14px;
-      background: #eff6ff;
-      border-top: 1px solid #bfdbfe;
-      font-size: 12px;
-      line-height: 1.5;
-      color: #1e40af;
-    }
-
-    .setup-hint.visible { display: block; }
-
-    .setup-hint strong { font-weight: 600; }
-
-    .save-btn {
-      background-color: #2563eb;
-      color: #fff;
-      border: none;
-      border-radius: 6px;
-      padding: 6px 16px;
-      font-size: 13px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: background-color 0.15s;
-    }
-
-    .save-btn:hover { background-color: #1d4ed8; }
-    .save-btn:active { background-color: #1e40af; }
-    .save-btn:disabled { background-color: #94a3b8; cursor: not-allowed; }
-
-    .refresh-btn {
-      background-color: #f6f8fa;
-      color: #24292f;
-      border: 1px solid #d1d9e0;
-      border-radius: 6px;
-      padding: 6px 12px;
-      font-size: 13px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: background-color 0.15s;
-    }
-
-    .refresh-btn:hover { background-color: #e8e8e8; }
-    .refresh-btn:active { background-color: #d1d9e0; }
-
-    .status {
-      font-size: 12px;
-      color: #656d76;
-    }
-
+    html, body { height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; font-size: 14px; color: #24292f; background: #fff; }
+    .container { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
+    .editor-title { display: none; padding: 8px 12px; font-weight: 600; font-size: 14px; color: #24292f; background: #f6f8fa; border-bottom: 1px solid #d1d9e0; }
+    .editor-title.visible { display: block; }
+    /* Toolbar */
+    .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 2px; padding: 5px 8px; background: #f6f8fa; border-bottom: 1px solid #d1d9e0; }
+    .tb-group { display: flex; align-items: center; gap: 1px; margin-right: 6px; }
+    .tb-btn { width: 28px; height: 26px; border: none; background: none; cursor: pointer; border-radius: 3px; display: flex; align-items: center; justify-content: center; color: #444; padding: 0; }
+    .tb-btn:hover { background: #e0e0e0; }
+    .tb-btn.active { background: #d0d7de; }
+    .tb-btn svg { width: 18px; height: 18px; }
+    .tb-select { height: 26px; border: 1px solid #d1d9e0; border-radius: 3px; font-size: 12px; padding: 0 4px; background: #fff; cursor: pointer; }
+    /* Sections */
+    .sections-area { flex: 1; overflow: auto; display: flex; flex-direction: row; min-height: 0; }
+    .section-block { border-right: 2px solid #d1d9e0; flex: 1; display: flex; flex-direction: column; min-width: 0; }
+    .section-block:last-child { border-right: none; }
+    .section-header { padding: 6px 12px; font-weight: 600; font-size: 13px; color: #1F004E; background: #E8E5ED; border-bottom: 1px solid #d1d9e0; }
+    .section-editor { flex: 1; min-height: 0; overflow-y: auto; }
+    .section-editor .ql-container.ql-snow { border: none; }
+    .section-editor .ql-editor { min-height: 80px; padding: 10px 12px; font-size: 14px; line-height: 1.5; }
+    .section-editor .ql-editor:focus { outline: 2px solid #2563eb; outline-offset: -2px; }
+    /* Footer */
+    .footer { flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; border-top: 1px solid #d1d9e0; background: #f6f8fa; }
+    .color-picker-wrapper { display: flex; align-items: center; gap: 6px; }
+    .color-dropdown-wrapper { position: relative; }
+    .color-btn { width: 22px; height: 22px; border: 1px solid #d1d9e0; border-radius: 3px; cursor: pointer; }
+    .color-grid { position: absolute; bottom: 28px; left: 0; background: #fff; border: 1px solid #d1d9e0; border-radius: 6px; padding: 6px; display: grid; grid-template-columns: repeat(9, 18px); gap: 3px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 1000; }
+    .cg-swatch { width: 18px; height: 18px; border-radius: 3px; border: 1px solid #d1d9e0; cursor: pointer; }
+    .save-btn { padding: 6px 16px; background: #2563eb; color: #fff; border: none; border-radius: 4px; font-size: 13px; font-weight: 500; cursor: pointer; }
+    .save-btn:hover { background: #1d4ed8; }
+    .save-btn:disabled { background: #94a3b8; cursor: not-allowed; }
+    .footer-btn { background: #f6f8fa; color: #24292f; border: 1px solid #d1d9e0; border-radius: 4px; padding: 4px 10px; font-size: 12px; cursor: pointer; }
+    .footer-btn:hover { background: #e8e8e8; }
+    .status { font-size: 12px; color: #656d76; }
     .status.saved { color: #16a34a; }
     .status.error { color: #dc2626; }
-
-    .color-picker-wrapper {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-
-    .color-picker-wrapper label {
-      font-size: 11px;
-      color: #656d76;
-      margin-right: 2px;
-    }
-
-    .color-dropdown-wrapper {
-      position: relative;
-    }
-
-    .color-btn {
-      width: 22px;
-      height: 22px;
-      border: 1px solid #d1d9e0;
-      border-radius: 3px;
-      cursor: pointer;
-      padding: 0;
-    }
-
-    .color-grid {
-      position: absolute;
-      bottom: 28px;
-      left: 0;
-      background: #fff;
-      border: 1px solid #d1d9e0;
-      border-radius: 6px;
-      padding: 6px;
-      display: grid;
-      grid-template-columns: repeat(9, 18px);
-      gap: 3px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-      z-index: 1000;
-    }
-
-    .cg-swatch {
-      width: 18px;
-      height: 18px;
-      border-radius: 3px;
-      border: 1px solid #d1d9e0;
-
-    }
-      cursor: pointer;
-    }
-
-    .cg-swatch:hover {
-      transform: scale(1.2);
-      border-color: #888;
-    }
-
-    .editor-title {
-      padding: 6px 12px;
-      font-size: 13px;
-      font-weight: 600;
-      color: #24292f;
-      background: #f6f8fa;
-      border-bottom: 1px solid #d1d9e0;
-      display: none;
-      flex-shrink: 0;
-    }
-
-    .editor-title.visible {
-      display: block;
-    }
-
-    .section-bar {
-      padding: 5px 12px;
-      background: #f6f8fa;
-      border-bottom: 1px solid #d1d9e0;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      flex-shrink: 0;
-    }
-
-    .section-bar label {
-      font-size: 12px;
-      color: #656d76;
-    }
-
-    .section-bar select {
-      font-size: 12px;
-      padding: 2px 6px;
-      border: 1px solid #d1d9e0;
-      border-radius: 3px;
-      color: #24292f;
-    }
-
+    /* Dropdowns */
+    .ls-menu, .color-grid { display: none; }
+    .ls-menu { position: absolute; top: 28px; left: 0; background: #fff; border: 1px solid #d1d9e0; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); z-index: 100; min-width: 60px; }
+    .ls-option { padding: 5px 12px; cursor: pointer; font-size: 12px; }
+    .ls-option:hover { background: #f0f0f0; }
+    .ls-option.active { background: #eff6ff; }
+    /* Quill overrides */
+    .ql-editor ol, .ql-editor ul { padding-left: 0.5em !important; }
+    .ql-editor li { padding-left: 0 !important; }
+    .ql-editor .ql-indent-1 { padding-left: 1.5em !important; }
+    .ql-editor .ql-indent-2 { padding-left: 3em !important; }
+    .ql-editor .ql-indent-3 { padding-left: 4.5em !important; }
+    .ql-editor .ql-indent-4 { padding-left: 6em !important; }
+    .ql-editor .ql-indent-5 { padding-left: 7.5em !important; }
   </style>
 </head>
 <body>
   <div class="container">
     <div id="editor-title" class="editor-title"></div>
-    <div id="section-bar" class="section-bar" style="display:none;">
-      <label>Section:</label>
-      <select id="section-select"></select>
-    </div>
-    <div class="editor-wrapper">
-      <div id="toolbar">
-        <span class="ql-formats">
-          <select class="ql-header">
-            <option value="1">H1</option>
-            <option value="2">H2</option>
-            <option value="3">H3</option>
-            <option selected>Normal</option>
-          </select>
-        </span>
-        <span class="ql-formats">
-          <button class="ql-bold"></button>
-          <button class="ql-italic"></button>
-          <button class="ql-underline"></button>
-          <button class="ql-strike"></button>
-        </span>
-        <span class="ql-formats">
-          <button class="ql-blockquote"></button>
-          <button class="ql-code-block"></button>
-        </span>
-        <span class="ql-formats">
-          <button class="ql-list" value="ordered"></button>
-          <button class="ql-list" value="bullet"></button>
-          <button class="ql-indent" value="-1"></button>
-          <button class="ql-indent" value="+1"></button>
-        </span>
-        <span class="ql-formats">
-          <button class="ql-align" value=""></button>
-          <button class="ql-align" value="center"></button>
-          <button class="ql-align" value="right"></button>
-          <span style="position:relative;display:inline-block;">
-            <button id="line-spacing-btn" type="button" title="Line spacing" style="width:28px;height:24px;padding:0;border:none;background:none;cursor:pointer;font-size:16px;vertical-align:middle;">&#8661;</button>
-            <div id="line-spacing-menu" style="display:none;position:absolute;top:28px;left:0;background:#fff;border:1px solid #d1d9e0;border-radius:4px;box-shadow:0 2px 8px rgba(0,0,0,0.15);z-index:100;min-width:60px;">
-              <div class="ls-option" data-spacing="1" style="padding:5px 12px;cursor:pointer;font-size:12px;">1.0</div>
-              <div class="ls-option" data-spacing="1.15" style="padding:5px 12px;cursor:pointer;font-size:12px;">1.15</div>
-              <div class="ls-option" data-spacing="1.5" style="padding:5px 12px;cursor:pointer;font-size:12px;background:#eff6ff;">1.5</div>
-              <div class="ls-option" data-spacing="2" style="padding:5px 12px;cursor:pointer;font-size:12px;">2.0</div>
-              <div class="ls-option" data-spacing="2.5" style="padding:5px 12px;cursor:pointer;font-size:12px;">2.5</div>
-              <div class="ls-option" data-spacing="3" style="padding:5px 12px;cursor:pointer;font-size:12px;">3.0</div>
-            </div>
-          </span>
-        </span>
-        <span class="ql-formats">
-          <button class="ql-link"></button>
-        </span>
-        <span class="ql-formats">
-          <button class="ql-clean"></button>
+
+    <!-- Custom toolbar with inline SVG icons -->
+    <div class="toolbar" id="toolbar">
+      <div class="tb-group">
+        <select id="tb-header" class="tb-select" title="Heading">
+          <option value="">Normal</option>
+          <option value="1">H1</option>
+          <option value="2">H2</option>
+          <option value="3">H3</option>
+        </select>
+      </div>
+      <div class="tb-group">
+        <button class="tb-btn" data-fmt="bold" title="Bold"><svg viewBox="0 0 18 18"><path class="ql-stroke" d="M5,4H9.5A2.5,2.5,0,0,1,12,6.5v0A2.5,2.5,0,0,1,9.5,9H5V4Z" fill="none" stroke="#444" stroke-width="2"/><path class="ql-stroke" d="M5,9h5.5A2.5,2.5,0,0,1,13,11.5v0A2.5,2.5,0,0,1,10.5,14H5V9Z" fill="none" stroke="#444" stroke-width="2"/></svg></button>
+        <button class="tb-btn" data-fmt="italic" title="Italic"><svg viewBox="0 0 18 18"><line x1="7" y1="4" x2="11" y2="4" stroke="#444" stroke-width="2" fill="none"/><line x1="7" y1="14" x2="11" y2="14" stroke="#444" stroke-width="2" fill="none"/><line x1="10" y1="4" x2="8" y2="14" stroke="#444" stroke-width="2" fill="none"/></svg></button>
+        <button class="tb-btn" data-fmt="underline" title="Underline"><svg viewBox="0 0 18 18"><path d="M5,3V9a4,4,0,0,0,8,0V3" fill="none" stroke="#444" stroke-width="2"/><line x1="4" y1="15" x2="14" y2="15" stroke="#444" stroke-width="2"/></svg></button>
+        <button class="tb-btn" data-fmt="strike" title="Strikethrough"><svg viewBox="0 0 18 18"><line x1="3" y1="9" x2="15" y2="9" stroke="#444" stroke-width="2" fill="none"/><path d="M6,4h4a2,2,0,0,1,0,4H6" fill="none" stroke="#444" stroke-width="1.5"/><path d="M6,14h4a2,2,0,0,0,0-4" fill="none" stroke="#444" stroke-width="1.5"/></svg></button>
+      </div>
+      <div class="tb-group">
+        <button class="tb-btn" data-fmt="list" data-val="ordered" title="Numbered list"><svg viewBox="0 0 18 18"><line x1="7" y1="4" x2="15" y2="4" stroke="#444" stroke-width="2" fill="none"/><line x1="7" y1="9" x2="15" y2="9" stroke="#444" stroke-width="2" fill="none"/><line x1="7" y1="14" x2="15" y2="14" stroke="#444" stroke-width="2" fill="none"/><text x="3" y="6" font-size="5" fill="#444" font-family="sans-serif" text-anchor="middle">1</text><text x="3" y="11" font-size="5" fill="#444" font-family="sans-serif" text-anchor="middle">2</text><text x="3" y="16" font-size="5" fill="#444" font-family="sans-serif" text-anchor="middle">3</text></svg></button>
+        <button class="tb-btn" data-fmt="list" data-val="bullet" title="Bullet list"><svg viewBox="0 0 18 18"><line x1="7" y1="4" x2="15" y2="4" stroke="#444" stroke-width="2" fill="none"/><line x1="7" y1="9" x2="15" y2="9" stroke="#444" stroke-width="2" fill="none"/><line x1="7" y1="14" x2="15" y2="14" stroke="#444" stroke-width="2" fill="none"/><circle cx="3" cy="4" r="1.5" fill="#444"/><circle cx="3" cy="9" r="1.5" fill="#444"/><circle cx="3" cy="14" r="1.5" fill="#444"/></svg></button>
+        <button class="tb-btn" data-fmt="indent" data-val="-1" title="Decrease indent"><svg viewBox="0 0 18 18"><line x1="3" y1="4" x2="15" y2="4" stroke="#444" stroke-width="2" fill="none"/><line x1="3" y1="14" x2="15" y2="14" stroke="#444" stroke-width="2" fill="none"/><line x1="9" y1="9" x2="15" y2="9" stroke="#444" stroke-width="2" fill="none"/><polygon points="6,6 3,9 6,12" fill="#444"/></svg></button>
+        <button class="tb-btn" data-fmt="indent" data-val="1" title="Increase indent"><svg viewBox="0 0 18 18"><line x1="3" y1="4" x2="15" y2="4" stroke="#444" stroke-width="2" fill="none"/><line x1="3" y1="14" x2="15" y2="14" stroke="#444" stroke-width="2" fill="none"/><line x1="9" y1="9" x2="15" y2="9" stroke="#444" stroke-width="2" fill="none"/><polygon points="3,6 6,9 3,12" fill="#444"/></svg></button>
+      </div>
+      <div class="tb-group">
+        <button class="tb-btn" data-fmt="align" data-val="" title="Align left"><svg viewBox="0 0 18 18"><line x1="3" y1="4" x2="15" y2="4" stroke="#444" stroke-width="2"/><line x1="3" y1="8" x2="11" y2="8" stroke="#444" stroke-width="2"/><line x1="3" y1="12" x2="15" y2="12" stroke="#444" stroke-width="2"/><line x1="3" y1="16" x2="9" y2="16" stroke="#444" stroke-width="2"/></svg></button>
+        <button class="tb-btn" data-fmt="align" data-val="center" title="Align center"><svg viewBox="0 0 18 18"><line x1="3" y1="4" x2="15" y2="4" stroke="#444" stroke-width="2"/><line x1="5" y1="8" x2="13" y2="8" stroke="#444" stroke-width="2"/><line x1="3" y1="12" x2="15" y2="12" stroke="#444" stroke-width="2"/><line x1="6" y1="16" x2="12" y2="16" stroke="#444" stroke-width="2"/></svg></button>
+        <button class="tb-btn" data-fmt="align" data-val="right" title="Align right"><svg viewBox="0 0 18 18"><line x1="3" y1="4" x2="15" y2="4" stroke="#444" stroke-width="2"/><line x1="7" y1="8" x2="15" y2="8" stroke="#444" stroke-width="2"/><line x1="3" y1="12" x2="15" y2="12" stroke="#444" stroke-width="2"/><line x1="9" y1="16" x2="15" y2="16" stroke="#444" stroke-width="2"/></svg></button>
+        <span style="position:relative;display:inline-flex;">
+          <button class="tb-btn" id="line-spacing-btn" title="Line spacing"><svg viewBox="0 0 18 18"><line x1="4" y1="5" x2="14" y2="5" stroke="#444" stroke-width="1.5"/><line x1="4" y1="9" x2="14" y2="9" stroke="#444" stroke-width="1.5"/><line x1="4" y1="13" x2="14" y2="13" stroke="#444" stroke-width="1.5"/><polygon points="1,3 3,1 3,3" fill="#444"/><polygon points="1,15 3,17 3,15" fill="#444"/></svg></button>
+          <div class="ls-menu" id="line-spacing-menu">
+            <div class="ls-option" data-spacing="1">1.0</div>
+            <div class="ls-option" data-spacing="1.15">1.15</div>
+            <div class="ls-option active" data-spacing="1.5">1.5</div>
+            <div class="ls-option" data-spacing="2">2.0</div>
+            <div class="ls-option" data-spacing="2.5">2.5</div>
+            <div class="ls-option" data-spacing="3">3.0</div>
+          </div>
         </span>
       </div>
-      <div id="editor"></div>
+      <div class="tb-group">
+        <button class="tb-btn" data-fmt="link" title="Link"><svg viewBox="0 0 18 18"><path d="M8.11,11.89a3,3,0,0,1-4.24,0,3,3,0,0,1,0-4.24L6.34,5.17" fill="none" stroke="#444" stroke-width="1.5"/><path d="M9.89,6.11a3,3,0,0,1,4.24,0,3,3,0,0,1,0,4.24L11.66,12.83" fill="none" stroke="#444" stroke-width="1.5"/><line x1="7" y1="11" x2="11" y2="7" stroke="#444" stroke-width="1.5"/></svg></button>
+        <button class="tb-btn" data-fmt="clean" title="Clear formatting"><svg viewBox="0 0 18 18"><line x1="4" y1="3" x2="9" y2="15" stroke="#444" stroke-width="2"/><line x1="4" y1="3" x2="14" y2="3" stroke="#444" stroke-width="2"/><line x1="3" y1="15" x2="13" y2="15" stroke="#444" stroke-width="2"/><line x1="12" y1="6" x2="15" y2="15" stroke="#c00" stroke-width="2"/><line x1="12" y1="15" x2="15" y2="6" stroke="#c00" stroke-width="2"/></svg></button>
+      </div>
     </div>
-    <div id="setup-hint" class="setup-hint">
-      <strong>Setup required:</strong> To save commentary to a table, bind the <strong>Output Variable</strong> to a text control, then assign an <strong>Insert Record</strong> action to the "On Save Action" trigger. In the action config, map the control variable to the target column in your writeback table. Other columns (metadata) can be mapped to additional controls.
+
+    <div class="sections-area">
+      <div class="section-block"><div class="section-header" id="header-1">Section 1</div><div class="section-editor" id="editor-1"></div></div>
+      <div class="section-block"><div class="section-header" id="header-2">Section 2</div><div class="section-editor" id="editor-2"></div></div>
+      <div class="section-block"><div class="section-header" id="header-3">Section 3</div><div class="section-editor" id="editor-3"></div></div>
     </div>
+
     <div class="footer">
       <div class="color-picker-wrapper">
-        <select id="font-size-input" class="font-size-input" title="Font size (px)">
-          <option value="8">8</option>
-          <option value="9">9</option>
-          <option value="10">10</option>
-          <option value="11">11</option>
-          <option value="12">12</option>
-          <option value="14" selected>14</option>
-          <option value="16">16</option>
-          <option value="18">18</option>
-          <option value="20">20</option>
-          <option value="24">24</option>
-          <option value="28">28</option>
-          <option value="32">32</option>
-          <option value="36">36</option>
-          <option value="48">48</option>
-          <option value="64">64</option>
-          <option value="72">72</option>
+        <select id="font-size-input" class="tb-select" title="Font size" style="width:50px;">
+          <option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option>
+          <option value="14" selected>14</option><option value="16">16</option><option value="18">18</option><option value="20">20</option>
+          <option value="24">24</option><option value="28">28</option><option value="32">32</option><option value="36">36</option>
+          <option value="48">48</option><option value="64">64</option><option value="72">72</option>
         </select>
         <div class="color-dropdown-wrapper">
           <button id="color-btn" class="color-btn" title="Text color" style="background:#20004c;"></button>
-          <div id="color-grid" class="color-grid" style="display:none;">
-            <span class="cg-swatch" data-color="#20004c" style="background:#20004c"></span>
-            <span class="cg-swatch" data-color="#5b059c" style="background:#5b059c"></span>
-            <span class="cg-swatch" data-color="#7519f9" style="background:#7519f9"></span>
-            <span class="cg-swatch" data-color="#7d76f2" style="background:#7d76f2"></span>
-            <span class="cg-swatch" data-color="#240691" style="background:#240691"></span>
-            <span class="cg-swatch" data-color="#0f82f4" style="background:#0f82f4"></span>
-            <span class="cg-swatch" data-color="#9ce0f1" style="background:#9ce0f1"></span>
-            <span class="cg-swatch" data-color="#fe8dee" style="background:#fe8dee"></span>
-            <span class="cg-swatch" data-color="#ffc000" style="background:#ffc000"></span>
-            <span class="cg-swatch" data-color="#00b050" style="background:#00b050"></span>
-            <span class="cg-swatch" data-color="#CCEEDF" style="background:#CCEEDF"></span>
-            <span class="cg-swatch" data-color="#66CC9F" style="background:#66CC9F"></span>
-            <span class="cg-swatch" data-color="#00AA60" style="background:#00AA60"></span>
-            <span class="cg-swatch" data-color="#CCF1F3" style="background:#CCF1F3"></span>
-            <span class="cg-swatch" data-color="#7FDDE2" style="background:#7FDDE2"></span>
-            <span class="cg-swatch" data-color="#00BBC5" style="background:#00BBC5"></span>
-            <span class="cg-swatch" data-color="#D9E6FF" style="background:#D9E6FF"></span>
-            <span class="cg-swatch" data-color="#81ABFF" style="background:#81ABFF"></span>
-            <span class="cg-swatch" data-color="#002060" style="background:#002060"></span>
-            <span class="cg-swatch" data-color="#E7E7FF" style="background:#E7E7FF"></span>
-            <span class="cg-swatch" data-color="#B8B8FF" style="background:#B8B8FF"></span>
-            <span class="cg-swatch" data-color="#8888FF" style="background:#8888FF"></span>
-            <span class="cg-swatch" data-color="#E4D7F9" style="background:#E4D7F9"></span>
-            <span class="cg-swatch" data-color="#A67AEB" style="background:#A67AEB"></span>
-            <span class="cg-swatch" data-color="#440099" style="background:#440099"></span>
-            <span class="cg-swatch" data-color="#E8E5ED" style="background:#E8E5ED"></span>
-            <span class="cg-swatch" data-color="#8F7FA6" style="background:#8F7FA6"></span>
-            <span class="cg-swatch" data-color="#1F004E" style="background:#1F004E"></span>
-            <span class="cg-swatch" data-color="#FCC222" style="background:#FCC222"></span>
-            <span class="cg-swatch" data-color="#FDE090" style="background:#FDE090"></span>
-            <span class="cg-swatch" data-color="#FEF2D2" style="background:#FEF2D2"></span>
-            <span class="cg-swatch" data-color="#FF5959" style="background:#FF5959"></span>
-            <span class="cg-swatch" data-color="#FF8A8A" style="background:#FF8A8A"></span>
-            <span class="cg-swatch" data-color="#FFDDDD" style="background:#FFDDDD"></span>
-            <span class="cg-swatch" data-color="#000000" style="background:#000000"></span>
-            <span class="cg-swatch" data-color="#ffffff" style="background:#ffffff"></span>
+          <div id="color-grid" class="color-grid">
+            <span class="cg-swatch" data-color="#20004c" style="background:#20004c"></span><span class="cg-swatch" data-color="#5b059c" style="background:#5b059c"></span><span class="cg-swatch" data-color="#7519f9" style="background:#7519f9"></span><span class="cg-swatch" data-color="#7d76f2" style="background:#7d76f2"></span><span class="cg-swatch" data-color="#240691" style="background:#240691"></span><span class="cg-swatch" data-color="#0f82f4" style="background:#0f82f4"></span><span class="cg-swatch" data-color="#9ce0f1" style="background:#9ce0f1"></span><span class="cg-swatch" data-color="#fe8dee" style="background:#fe8dee"></span><span class="cg-swatch" data-color="#ffc000" style="background:#ffc000"></span>
+            <span class="cg-swatch" data-color="#00b050" style="background:#00b050"></span><span class="cg-swatch" data-color="#CCEEDF" style="background:#CCEEDF"></span><span class="cg-swatch" data-color="#66CC9F" style="background:#66CC9F"></span><span class="cg-swatch" data-color="#00AA60" style="background:#00AA60"></span><span class="cg-swatch" data-color="#CCF1F3" style="background:#CCF1F3"></span><span class="cg-swatch" data-color="#7FDDE2" style="background:#7FDDE2"></span><span class="cg-swatch" data-color="#00BBC5" style="background:#00BBC5"></span><span class="cg-swatch" data-color="#D9E6FF" style="background:#D9E6FF"></span><span class="cg-swatch" data-color="#81ABFF" style="background:#81ABFF"></span>
+            <span class="cg-swatch" data-color="#002060" style="background:#002060"></span><span class="cg-swatch" data-color="#E7E7FF" style="background:#E7E7FF"></span><span class="cg-swatch" data-color="#B8B8FF" style="background:#B8B8FF"></span><span class="cg-swatch" data-color="#8888FF" style="background:#8888FF"></span><span class="cg-swatch" data-color="#E4D7F9" style="background:#E4D7F9"></span><span class="cg-swatch" data-color="#A67AEB" style="background:#A67AEB"></span><span class="cg-swatch" data-color="#440099" style="background:#440099"></span><span class="cg-swatch" data-color="#E8E5ED" style="background:#E8E5ED"></span><span class="cg-swatch" data-color="#8F7FA6" style="background:#8F7FA6"></span>
+            <span class="cg-swatch" data-color="#1F004E" style="background:#1F004E"></span><span class="cg-swatch" data-color="#FCC222" style="background:#FCC222"></span><span class="cg-swatch" data-color="#FDE090" style="background:#FDE090"></span><span class="cg-swatch" data-color="#FEF2D2" style="background:#FEF2D2"></span><span class="cg-swatch" data-color="#FF5959" style="background:#FF5959"></span><span class="cg-swatch" data-color="#FF8A8A" style="background:#FF8A8A"></span><span class="cg-swatch" data-color="#FFDDDD" style="background:#FFDDDD"></span><span class="cg-swatch" data-color="#000000" style="background:#000000"></span><span class="cg-swatch" data-color="#ffffff" style="background:#ffffff"></span>
           </div>
         </div>
         <input type="color" id="custom-color" value="#24292f" title="Pick a color" style="width:20px;height:20px;border:1px solid #d1d9e0;border-radius:3px;padding:0;cursor:pointer;" />
       </div>
       <span id="status" class="status"></span>
-      <button id="paste-btn" class="refresh-btn">Paste</button>
-      <button id="refresh-btn" class="refresh-btn">Refresh</button>
-      <button id="clear-btn" class="refresh-btn">Clear</button>
-      <button id="save-btn" class="save-btn" disabled>Save</button>
+      <div style="display:flex; gap:6px; align-items:center;">
+        <button id="paste-btn" class="footer-btn">Paste</button>
+        <button id="refresh-btn" class="footer-btn">&#x21bb; Refresh</button>
+        <button id="save-btn" class="save-btn" disabled>Save All</button>
+      </div>
     </div>
   </div>
-
-  <!-- Image Insert Panel (popup style with paste input) -->
-  <div id="image-panel" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:360px;background:#fff;border-radius:8px;padding:20px;box-shadow:0 4px 20px rgba(0,0,0,0.3);z-index:9999;">
-    <div style="font-weight:600;margin-bottom:12px;font-size:14px;">Insert Image</div>
-    <label style="font-size:12px;color:#656d76;">Image URL</label>
-    <input id="image-url-input" type="text" placeholder="Paste image URL here..." style="width:100%;padding:8px 10px;border:1px solid #d1d9e0;border-radius:4px;margin-bottom:12px;box-sizing:border-box;font-size:13px;" />
-    <label style="font-size:12px;color:#656d76;">Size</label>
-    <div style="display:flex;gap:6px;margin:6px 0 12px 0;flex-wrap:wrap;">
-      <button class="img-size-btn" data-width="100%" style="padding:4px 10px;border:1px solid #2563eb;border-radius:4px;background:#eff6ff;cursor:pointer;font-size:12px;color:#2563eb;">100%</button>
-      <button class="img-size-btn" data-width="90%" style="padding:4px 10px;border:1px solid #d1d9e0;border-radius:4px;background:#fff;cursor:pointer;font-size:12px;">90%</button>
-      <button class="img-size-btn" data-width="80%" style="padding:4px 10px;border:1px solid #d1d9e0;border-radius:4px;background:#fff;cursor:pointer;font-size:12px;">80%</button>
-      <button class="img-size-btn" data-width="70%" style="padding:4px 10px;border:1px solid #d1d9e0;border-radius:4px;background:#fff;cursor:pointer;font-size:12px;">70%</button>
-      <button class="img-size-btn" data-width="60%" style="padding:4px 10px;border:1px solid #d1d9e0;border-radius:4px;background:#fff;cursor:pointer;font-size:12px;">60%</button>
-      <button class="img-size-btn" data-width="50%" style="padding:4px 10px;border:1px solid #d1d9e0;border-radius:4px;background:#fff;cursor:pointer;font-size:12px;">50%</button>
-      <button class="img-size-btn" data-width="40%" style="padding:4px 10px;border:1px solid #d1d9e0;border-radius:4px;background:#fff;cursor:pointer;font-size:12px;">40%</button>
-      <button class="img-size-btn" data-width="30%" style="padding:4px 10px;border:1px solid #d1d9e0;border-radius:4px;background:#fff;cursor:pointer;font-size:12px;">30%</button>
-      <button class="img-size-btn" data-width="20%" style="padding:4px 10px;border:1px solid #d1d9e0;border-radius:4px;background:#fff;cursor:pointer;font-size:12px;">20%</button>
-      <button class="img-size-btn" data-width="10%" style="padding:4px 10px;border:1px solid #d1d9e0;border-radius:4px;background:#fff;cursor:pointer;font-size:12px;">10%</button>
-    </div>
-    <div id="image-preview" style="display:none;border:1px dashed #d1d9e0;border-radius:4px;padding:8px;background:#f6f8fa;text-align:center;margin-bottom:12px;max-height:200px;overflow:auto;">
-      <img id="image-preview-img" src="" style="max-width:100%;height:auto;" />
-    </div>
-    <div style="display:flex;gap:8px;justify-content:flex-end;">
-      <button id="image-cancel-btn" style="padding:7px 16px;border:1px solid #d1d9e0;border-radius:4px;background:#f6f8fa;cursor:pointer;font-size:13px;">Cancel</button>
-      <button id="image-insert-btn" style="padding:7px 16px;border:none;border-radius:4px;background:#2563eb;color:#fff;cursor:pointer;font-size:13px;">Insert</button>
-    </div>
-  </div>
-  <div id="image-overlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.3);z-index:9998;"></div>
 
   <script>
-    const { client } = SigmaPlugin;
+    var SigmaPlugin = window.SigmaPlugin || { client: { config: { configureEditorPanel: function(){}, subscribe: function(){} }, elements: { subscribeToElementData: function(){} } } };
+    var client = SigmaPlugin.client;
 
-    // --- Editor Panel ---
-    var currentMode = 'data';
+    // --- Config Panel ---
+    client.config.configureEditorPanel([
+      { name: 'layout', type: 'radio', values: ['Horizontal', 'Vertical'], singleLine: true, label: 'Layout' },
+      { name: 'source', type: 'element' },
+      { name: 'markdownColumn', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['text'], label: 'Content Column' },
+      { name: 'sectionColumn', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['text'], label: 'Section Column 1 (Slide)' },
+      { name: 'sectionValue', type: 'text', label: 'Slide Name (fixed value)' },
+      { name: 'sectionColumn2', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['text'], label: 'Section Column 2 (Box)' },
+      { name: 'section1Name', type: 'text', label: 'Section 1 Name' },
+      { name: 'section1Title', type: 'text', label: 'Section 1 Header' },
+      { name: 'section2Name', type: 'text', label: 'Section 2 Name' },
+      { name: 'section2Title', type: 'text', label: 'Section 2 Header' },
+      { name: 'section3Name', type: 'text', label: 'Section 3 Name' },
+      { name: 'section3Title', type: 'text', label: 'Section 3 Header' },
+      { name: 'outputVar1', type: 'variable', allowedTypes: ['text'], label: 'Output Variable (Section 1)' },
+      { name: 'outputVar2', type: 'variable', allowedTypes: ['text'], label: 'Output Variable (Section 2)' },
+      { name: 'outputVar3', type: 'variable', allowedTypes: ['text'], label: 'Output Variable (Section 3)' },
+      { name: 'onSave', type: 'action-trigger', label: 'On Save Action' },
+      { name: 'editorTitle', type: 'text', label: 'Editor Title' },
+      { name: 'showTitle', type: 'checkbox', label: 'Show Title' }
+    ]);
 
-    function configurePanel(mode) {
-      var panel = [
-        { name: 'inputMode', type: 'radio', values: ['Data Source', 'Blank Document'], singleLine: true, label: 'Input Mode' }
-      ];
-      if (mode === 'data') {
-        panel.push(
-          { name: 'source', type: 'element' },
-          { name: 'markdownColumn', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['text'], label: 'Markdown Column' },
-          { name: 'sectionColumn', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['text'], label: 'Section Column (optional)' },
-          { name: 'sectionValue', type: 'text', label: 'Section Value' },
-          { name: 'sectionColumn2', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['text'], label: 'Section Column 2 (optional)' },
-          { name: 'sectionValue2', type: 'text', label: 'Section Value 2' },
-          { name: 'hideSection', type: 'checkbox', label: 'Hide Section Selector' }
-        );
-      }
-      panel.push(
-        { name: 'outputVariable', type: 'variable', allowedTypes: ['text'], label: 'Output Variable' },
-        { name: 'onSave', type: 'action-trigger', label: 'On Save Action' },
-        { name: 'editorTitle', type: 'text', label: 'Editor Title' },
-        { name: 'showTitle', type: 'checkbox', label: 'Show Title' }
-      );
-      client.config.configureEditorPanel(panel);
-    }
-
-    configurePanel('data');
-
-    // --- Quill Editor ---
-    // Register custom font size attribute (inline px)
+    // --- Quill Setup ---
     var SizeStyle = Quill.import('attributors/style/size');
     SizeStyle.whitelist = null;
     Quill.register(SizeStyle, true);
-
     var AlignStyle = Quill.import('attributors/style/align');
     Quill.register(AlignStyle, true);
 
-    var quill = new Quill('#editor', {
-      theme: 'snow',
-      modules: {
-        toolbar: {
-          container: '#toolbar',
-          handlers: {
-            image: function () {
-              var panel = document.getElementById('image-panel');
-              var overlay = document.getElementById('image-overlay');
-              var urlInput = document.getElementById('image-url-input');
-              urlInput.value = '';
-              document.getElementById('image-preview').style.display = 'none';
-              panel.style.display = 'block';
-              overlay.style.display = 'block';
-            }
-          }
-        }
-      },
-      placeholder: 'Start writing...'
-    });
-
-    // --- Font Size + Header Mapping ---
-    var fontSizeInput = document.getElementById('font-size-input');
-    var headerSizes = { '1': 32, '2': 24, '3': 20, '': 14 };
-
-    fontSizeInput.addEventListener('change', function () {
-      var size = fontSizeInput.value + 'px';
-      var range = quill.getSelection();
-      if (range && range.length > 0) {
-        quill.formatText(range.index, range.length, 'size', size);
-      } else {
-        quill.format('size', size);
-      }
-      quill.focus();
-    });
-
-    // When header changes, update font size input to match
-    quill.on('selection-change', function () {
-      var format = quill.getFormat();
-      if (format.size) {
-        fontSizeInput.value = parseInt(format.size);
-      } else if (format.header) {
-        fontSizeInput.value = headerSizes[String(format.header)] || 14;
-      } else {
-        fontSizeInput.value = 14;
-      }
-    });
-
-    // Override header toolbar to also apply font size
-    var toolbar = quill.getModule('toolbar');
-    var originalHeaderHandler = toolbar.handlers && toolbar.handlers.header;
-    toolbar.addHandler('header', function (value) {
-      quill.format('header', value);
-      var size = headerSizes[String(value || '')] || 14;
-      fontSizeInput.value = size;
-      quill.format('size', size + 'px');
-    });
-
-    // Image panel
-    var imagePanel = document.getElementById('image-panel');
-    var imageOverlay = document.getElementById('image-overlay');
-    var imagePreview = document.getElementById('image-preview');
-    var imagePreviewImg = document.getElementById('image-preview-img');
-    var imageUrlInput = document.getElementById('image-url-input');
-    var imageSelectedWidth = '100%';
-
-    function closeImagePanel() {
-      imagePanel.style.display = 'none';
-      imageOverlay.style.display = 'none';
-      imagePreview.style.display = 'none';
+    // Create 3 Quill editors — no toolbar, just plain editors
+    var quills = [];
+    for (var idx = 1; idx <= 3; idx++) {
+      quills.push(new Quill('#editor-' + idx, { theme: 'snow', modules: { toolbar: false }, placeholder: 'Start writing...' }));
     }
 
-    document.getElementById('image-cancel-btn').addEventListener('click', closeImagePanel);
-    imageOverlay.addEventListener('click', closeImagePanel);
+    // --- Active Editor + Selection Tracking ---
+    var activeQuill = quills[0];
+    var lastSelection = null;
 
-    // Size buttons
-    var sizeBtns = document.querySelectorAll('.img-size-btn');
-    sizeBtns.forEach(function (btn) {
+    quills.forEach(function (q) {
+      q.on('selection-change', function (range) {
+        if (range) { activeQuill = q; lastSelection = range; }
+      });
+    });
+
+    // --- Toolbar Button Handlers ---
+    document.querySelectorAll('.tb-btn[data-fmt]').forEach(function (btn) {
+      btn.addEventListener('mousedown', function (e) {
+        e.preventDefault(); // prevent focus loss from editor
+      });
       btn.addEventListener('click', function () {
-        imageSelectedWidth = btn.getAttribute('data-width');
-        sizeBtns.forEach(function (b) {
-          b.style.border = '1px solid #d1d9e0';
-          b.style.background = '#fff';
-          b.style.color = '#24292f';
-        });
-        btn.style.border = '1px solid #2563eb';
-        btn.style.background = '#eff6ff';
-        btn.style.color = '#2563eb';
-        // Update preview if URL exists
-        var url = imageUrlInput.value.trim();
-        if (url) {
-          imagePreviewImg.src = url;
-          imagePreviewImg.style.width = imageSelectedWidth;
-          imagePreview.style.display = 'block';
+        var fmt = btn.getAttribute('data-fmt');
+        var val = btn.getAttribute('data-val');
+        var q = activeQuill;
+        var cur = q.getFormat();
+
+        if (fmt === 'bold' || fmt === 'italic' || fmt === 'underline' || fmt === 'strike') {
+          q.format(fmt, !cur[fmt]);
+        } else if (fmt === 'list') {
+          q.format('list', cur.list === val ? false : val);
+        } else if (fmt === 'indent') {
+          var dir = parseInt(val);
+          var level = (cur.indent || 0) + dir;
+          q.format('indent', level <= 0 ? false : level);
+        } else if (fmt === 'align') {
+          q.format('align', val || false);
+        } else if (fmt === 'link') {
+          q.format('link', cur.link ? false : 'https://');
+        } else if (fmt === 'clean') {
+          var range = q.getSelection();
+          if (range) q.removeFormat(range.index, range.length);
+        } else if (fmt === 'blockquote' || fmt === 'code-block') {
+          q.format(fmt, !cur[fmt]);
         }
       });
     });
 
-    // Show preview on paste/input in URL field
-    imageUrlInput.addEventListener('input', function () {
-      var url = imageUrlInput.value.trim();
-      if (url && (url.startsWith('http') || url.startsWith('/'))) {
-        imagePreviewImg.src = url;
-        imagePreviewImg.style.width = imageSelectedWidth;
-        imagePreview.style.display = 'block';
-      } else {
-        imagePreview.style.display = 'none';
-      }
+    // Header select
+    document.getElementById('tb-header').addEventListener('mousedown', function (e) { e.stopPropagation(); });
+    document.getElementById('tb-header').addEventListener('change', function () {
+      var val = this.value ? parseInt(this.value) : false;
+      activeQuill.format('header', val);
+      activeQuill.focus();
     });
 
-    // Insert button
-    document.getElementById('image-insert-btn').addEventListener('click', function () {
-      var url = imageUrlInput.value.trim();
-      if (!url) { setStatus('Enter an image URL', 'error'); return; }
-      closeImagePanel();
-      quill.focus();
-      var range = quill.getSelection(true);
-      quill.insertEmbed(range.index, 'image', url);
-      setTimeout(function () {
-        var img = quill.root.querySelector('img[src="' + url + '"]');
-        if (img) {
-          img.style.width = imageSelectedWidth;
-          img.style.height = 'auto';
-        }
-      }, 50);
-      quill.setSelection(range.index + 1);
-      setStatus('Image inserted', 'saved');
+    // --- Font Size ---
+    document.getElementById('font-size-input').addEventListener('mousedown', function (e) { e.stopPropagation(); });
+    document.getElementById('font-size-input').addEventListener('change', function () {
+      var size = this.value + 'px';
+      var range = lastSelection;
+      if (range && range.length > 0) { activeQuill.formatText(range.index, range.length, 'size', size); }
+      else { activeQuill.format('size', size); }
+      activeQuill.focus();
     });
-
-
 
     // --- Text Color ---
     var colorBtn = document.getElementById('color-btn');
     var colorGrid = document.getElementById('color-grid');
-    var customColorPicker = document.getElementById('custom-color');
-
-    colorBtn.addEventListener('click', function () {
-      colorGrid.style.display = colorGrid.style.display === 'none' ? 'grid' : 'none';
-    });
+    colorBtn.addEventListener('click', function () { colorGrid.style.display = colorGrid.style.display === 'none' ? 'grid' : 'none'; });
 
     function applyColor(color) {
-      var range = quill.getSelection();
-      if (range && range.length > 0) {
-        quill.formatText(range.index, range.length, 'color', color);
-      } else {
-        quill.format('color', color);
-      }
+      var range = lastSelection;
+      if (range && range.length > 0) { activeQuill.formatText(range.index, range.length, 'color', color); }
+      else { activeQuill.format('color', color); }
       colorBtn.style.background = color;
       colorGrid.style.display = 'none';
+      activeQuill.focus();
     }
-
-    document.querySelectorAll('.cg-swatch').forEach(function (swatch) {
-      swatch.addEventListener('click', function () {
-        applyColor(swatch.getAttribute('data-color'));
-        quill.focus();
-      });
+    document.querySelectorAll('.cg-swatch').forEach(function (s) {
+      s.addEventListener('mousedown', function (e) { e.preventDefault(); });
+      s.addEventListener('click', function () { applyColor(s.getAttribute('data-color')); });
     });
-
-    customColorPicker.addEventListener('input', function () {
-      applyColor(customColorPicker.value);
-    });
+    document.getElementById('custom-color').addEventListener('input', function () { applyColor(this.value); });
 
     // --- Line Spacing ---
     var lsBtn = document.getElementById('line-spacing-btn');
     var lsMenu = document.getElementById('line-spacing-menu');
-    var editorEl = document.querySelector('#editor .ql-editor');
-    editorEl.style.lineHeight = '1.5';
-
-    // Force lists flush left — injected after Quill CSS to ensure override
-    var listStyle = document.createElement('style');
-    listStyle.textContent = '.ql-editor ol, .ql-editor ul { padding-left: 0.5em !important; } .ql-editor li { padding-left: 0 !important; } .ql-editor li.ql-indent-1 { padding-left: 1.5em !important; } .ql-editor li.ql-indent-2 { padding-left: 3em !important; } .ql-editor li.ql-indent-3 { padding-left: 4.5em !important; }';
-    document.head.appendChild(listStyle);
-
-    lsBtn.addEventListener('click', function () {
-      lsMenu.style.display = lsMenu.style.display === 'none' ? 'block' : 'none';
-    });
-
+    lsBtn.addEventListener('click', function () { lsMenu.style.display = lsMenu.style.display === 'none' ? 'block' : 'none'; });
     document.querySelectorAll('.ls-option').forEach(function (opt) {
       opt.addEventListener('click', function () {
-        var spacing = opt.getAttribute('data-spacing');
-        editorEl.style.lineHeight = spacing;
-        // Highlight selected
-        document.querySelectorAll('.ls-option').forEach(function (o) { o.style.background = '#fff'; });
-        opt.style.background = '#eff6ff';
+        document.querySelectorAll('.section-editor .ql-editor').forEach(function (el) { el.style.lineHeight = opt.getAttribute('data-spacing'); });
+        document.querySelectorAll('.ls-option').forEach(function (o) { o.classList.remove('active'); });
+        opt.classList.add('active');
         lsMenu.style.display = 'none';
-      });
-      opt.addEventListener('mouseenter', function () { opt.style.background = '#f0f0f0'; });
-      opt.addEventListener('mouseleave', function () {
-        var selected = opt.getAttribute('data-spacing') === editorEl.style.lineHeight;
-        opt.style.background = selected ? '#eff6ff' : '#fff';
       });
     });
-
-    // Close menu when clicking elsewhere
     document.addEventListener('click', function (e) {
-      if (!lsBtn.contains(e.target) && !lsMenu.contains(e.target)) {
-        lsMenu.style.display = 'none';
-      }
+      if (!lsBtn.contains(e.target) && !lsMenu.contains(e.target)) lsMenu.style.display = 'none';
     });
 
     // --- SDK helpers ---
-    function sdkSetVariable(configName, value) {
-      if (typeof client.setVariable === 'function') {
-        client.setVariable(configName, value);
-      } else if (client.config && typeof client.config.setVariable === 'function') {
-        client.config.setVariable(configName, value);
-      } else {
-        client.config.setKey(configName, value);
-      }
+    function sdkSetVariable(name, value) {
+      if (typeof client.setVariable === 'function') client.setVariable(name, value);
+      else if (client.config && typeof client.config.setVariable === 'function') client.config.setVariable(name, value);
+      else client.config.setKey(name, value);
     }
-
-    function sdkTriggerAction(configName) {
-      if (typeof client.triggerAction === 'function') {
-        client.triggerAction(configName);
-      } else if (client.config && typeof client.config.triggerAction === 'function') {
-        client.config.triggerAction(configName);
-      } else {
-        console.warn('triggerAction not available in this SDK version');
-      }
+    function sdkTriggerAction(name) {
+      if (typeof client.triggerAction === 'function') client.triggerAction(name);
+      else if (client.config && typeof client.config.triggerAction === 'function') client.config.triggerAction(name);
     }
 
     // --- State ---
     var saveBtn = document.getElementById('save-btn');
     var statusEl = document.getElementById('status');
-    var setupHint = document.getElementById('setup-hint');
-    var outputVarId = null;
-    var onSaveId = null;
-    var unsubData = null;
-    var currentConfig = null;
     var hasUnsavedChanges = false;
-    var justSaved = false;
-    var isLoading = false;
-    var loadedContent = '';
+    var outputVars = [null, null, null];
+    var onSaveId = null;
+    var sectionNames = ['', '', ''];
+    function setStatus(msg, type) { statusEl.textContent = msg; statusEl.className = 'status' + (type ? ' ' + type : ''); }
 
-    function setStatus(msg, type) {
-      statusEl.textContent = msg;
-      statusEl.className = 'status' + (type ? ' ' + type : '');
-    }
-
-    quill.on('text-change', function () {
-      if (isLoading) return;
-      if (!hasUnsavedChanges) {
-        hasUnsavedChanges = true;
-        setStatus('Unsaved changes', '');
-      }
-      saveBtn.disabled = !outputVarId;
+    quills.forEach(function (q) {
+      q.on('text-change', function () {
+        if (!hasUnsavedChanges) { hasUnsavedChanges = true; setStatus('Unsaved changes', ''); }
+        saveBtn.disabled = false;
+      });
     });
 
-    // --- Save ---
-    saveBtn.addEventListener('click', async function () {
-      if (!outputVarId) return;
-
+    // --- Save All ---
+    saveBtn.addEventListener('click', function () {
       saveBtn.disabled = true;
       setStatus('Saving...', '');
-
       try {
-        var html = quill.root.innerHTML;
-        console.log('[Editor] Saving HTML:', html.substring(0, 200));
-
-        sdkSetVariable(outputVarId, html);
-
-        hasUnsavedChanges = false;
-        justSaved = true;
-        loadedContent = html;
-        setStatus('Saved', 'saved');
-
-        if (onSaveId) {
-          // Delay action trigger to prevent Sigma from closing the panel immediately
-          setTimeout(function () {
-            sdkTriggerAction(onSaveId);
-          }, 500);
+        for (var i = 0; i < 3; i++) {
+          if (outputVars[i]) sdkSetVariable(outputVars[i], quills[i].root.innerHTML);
         }
-      } catch (err) {
-        console.error('Save error:', err);
-        setStatus('Save failed: ' + err.message, 'error');
-      }
-
+        hasUnsavedChanges = false;
+        setStatus('Saved', 'saved');
+        if (onSaveId) setTimeout(function () { sdkTriggerAction(onSaveId); }, 500);
+      } catch (err) { setStatus('Save failed: ' + err.message, 'error'); }
       saveBtn.disabled = false;
     });
 
-    // --- Paste Button ---
-    var pasteBtn = document.getElementById('paste-btn');
-    pasteBtn.addEventListener('click', async function () {
+    // --- Paste ---
+    document.getElementById('paste-btn').addEventListener('click', async function () {
       try {
         var text = await navigator.clipboard.readText();
-        if (text) {
-          var range = quill.getSelection() || { index: quill.getLength() };
-          quill.insertText(range.index, text);
+        if (text && activeQuill) {
+          var range = activeQuill.getSelection() || { index: activeQuill.getLength() };
+          activeQuill.insertText(range.index, text);
         }
-      } catch (err) {
-        // Fallback: prompt user for text
-        var input = prompt('Paste your text here:');
-        if (input) {
-          var range = quill.getSelection() || { index: quill.getLength() };
-          quill.insertText(range.index, input);
-        }
-      }
+      } catch (e) {}
     });
 
-    // --- Refresh Button ---
-    var refreshBtn = document.getElementById('refresh-btn');
-    var lastReceivedData = null;
-    var lastFullData = null;
-    var forceReload = false;
-
-    refreshBtn.addEventListener('click', function () {
-      justSaved = false;
-      hasUnsavedChanges = false;
-      forceReload = true;
-      // Clear editor
-      isLoading = true;
-      quill.setContents([]);
-      isLoading = false;
-      loadedContent = '';
-      lastReceivedData = null;
-      lastFullData = null;
-      // Force resubscribe to get fresh data from Sigma
+    // --- Refresh ---
+    var lastConfig = null;
+    document.getElementById('refresh-btn').addEventListener('click', function () {
+      if (!lastConfig) return;
       if (unsubData) { unsubData(); unsubData = null; }
-      if (currentConfig && currentConfig.source) {
-        setStatus('Refreshing...', '');
-        unsubData = client.elements.subscribeToElementData(currentConfig.source, function (data) {
-          lastFullData = data;
-          var columnData = data[currentConfig.markdownColumn];
-          if (!columnData || columnData.length === 0) {
-            setStatus('No data available', 'error');
-            return;
-          }
-          var rowIndex = 0;
-          if (currentConfig.sectionColumn) {
-            var sectionData = data[currentConfig.sectionColumn];
-            var fixedSection = currentConfig.sectionValue ? String(currentConfig.sectionValue).trim() : null;
-            var pluginId = new URLSearchParams(window.location.search).get('id') || 'default';
-            var editorSavedSection = localStorage.getItem('sigma-editor-section-' + pluginId) || '';
-            var targetSection = fixedSection || editorSavedSection || '';
-            if (targetSection && sectionData) {
-              rowIndex = -1;
-              var targetLower = targetSection.toLowerCase();
-              for (var i = 0; i < sectionData.length; i++) {
-                if (String(sectionData[i]).trim().toLowerCase() === targetLower) { rowIndex = i; break; }
-              }
-              if (rowIndex === -1) { setStatus('No content for "' + targetSection + '" yet — ready to write', ''); forceReload = false; return; }
-            }
-          }
-          var md = columnData[rowIndex];
-          lastReceivedData = md;
-          console.log('[Editor] Data at row', rowIndex, ':', md ? md.substring(0, 50) : '(empty)', '| justSaved:', justSaved, '| loadedContent:', loadedContent ? loadedContent.substring(0, 30) : '(empty)');
-          // Don't overwrite editor with stale data right after saving
-          if (justSaved && md !== undefined) {
-            var currentHtml = quill.root.innerHTML;
-            // If the data from table matches what we just saved, keep it
-            // If it's different (old data), skip loading to preserve the save
-            if (md !== currentHtml && md !== loadedContent) {
-              // Data actually changed (e.g., region filter changed) - load it
-              console.log('[Editor] justSaved but data changed — loading new content');
-              justSaved = false;
-              loadContent(md);
-            } else {
-              console.log('[Editor] justSaved and data matches — skipping reload');
-            }
-            return;
-          }
-          console.log('[Editor] Loading content normally');
-          loadContent(md);
-          forceReload = false;
-          setStatus('Refreshed', 'saved');
-        });
-      } else {
-        setStatus('No data source configured', 'error');
+      if (lastConfig.source && lastConfig.markdownColumn && lastConfig.sectionColumn) {
+        unsubData = client.elements.subscribeToElementData(lastConfig.source, function (data) { loadData(data, lastConfig); });
       }
+      setStatus('Refreshed', 'saved');
     });
 
-    // --- Clear Button ---
-    var clearBtn = document.getElementById('clear-btn');
-    clearBtn.addEventListener('click', function () {
-      isLoading = true;
-      quill.setContents([]);
-      isLoading = false;
-      loadedContent = '';
-      hasUnsavedChanges = true;
-      setStatus('Unsaved changes', '');
-      saveBtn.disabled = !outputVarId;
-      quill.focus();
-    });
-
-    // --- Load content into editor ---
-    function loadContent(content) {
-      if (!content || !content.trim()) {
-        isLoading = true;
-        quill.setContents([]);
-        isLoading = false;
-        loadedContent = '';
-        hasUnsavedChanges = false;
-        setStatus('', '');
-        return;
+    // --- Data Loading ---
+    function loadData(data, config) {
+      var col = data[config.markdownColumn];
+      var sec = data[config.sectionColumn];
+      if (!col || !sec) return;
+      var fixedSlide = config.sectionValue ? String(config.sectionValue).trim().toLowerCase() : null;
+      var sec2 = config.sectionColumn2 ? data[config.sectionColumn2] : null;
+      for (var i = 0; i < 3; i++) {
+        if (!sectionNames[i]) continue;
+        var target = sectionNames[i].toLowerCase().trim();
+        var found = false;
+        for (var j = 0; j < sec.length; j++) {
+          // Column 1 must match fixed slide value
+          if (fixedSlide && String(sec[j]).trim().toLowerCase() !== fixedSlide) continue;
+          // Column 2 must match the editor's section name
+          if (sec2) {
+            if (String(sec2[j]).trim().toLowerCase() !== target) continue;
+          } else {
+            // Fallback: if no column 2, match column 1 against section name
+            if (String(sec[j]).trim().toLowerCase() !== target) continue;
+          }
+          var c = col[j];
+          if (c && c.trim()) quills[i].root.innerHTML = c;
+          else quills[i].setContents([]);
+          found = true;
+          break;
+        }
+        if (!found) quills[i].setContents([]);
       }
-      loadedContent = content;
-      isLoading = true;
-      var trimmed = content.trim();
-      if (trimmed.startsWith('<')) {
-        // Already Quill HTML — load directly to preserve all inline styles
-        quill.root.innerHTML = content;
-      } else {
-        // Markdown — parse to HTML then use clipboard to convert lists properly
-        var html = DOMPurify.sanitize(marked.parse(content));
-        var delta = quill.clipboard.convert({ html: html });
-        quill.setContents(delta);
-      }
-      isLoading = false;
       hasUnsavedChanges = false;
       setStatus('', '');
     }
 
     // --- Config Subscription ---
+    var unsubData = null;
     client.config.subscribe(function (config) {
-      currentConfig = config;
-      // Update title
+      lastConfig = config;
       var titleEl = document.getElementById('editor-title');
-      if (config.editorTitle && config.showTitle) {
-        titleEl.textContent = config.editorTitle;
-        titleEl.classList.add('visible');
-      } else {
-        titleEl.classList.remove('visible');
+      if (config.editorTitle && config.showTitle) { titleEl.textContent = config.editorTitle; titleEl.classList.add('visible'); }
+      else { titleEl.classList.remove('visible'); }
+
+      var sectionsArea = document.querySelector('.sections-area');
+      var isH = config.layout !== 'Vertical';
+      sectionsArea.style.flexDirection = isH ? 'row' : 'column';
+      document.querySelectorAll('.section-block').forEach(function (b) {
+        b.style.borderRight = isH ? '2px solid #d1d9e0' : 'none';
+        b.style.borderBottom = isH ? 'none' : '2px solid #d1d9e0';
+      });
+      var blocks = document.querySelectorAll('.section-block');
+      blocks[blocks.length - 1].style.borderRight = 'none';
+      blocks[blocks.length - 1].style.borderBottom = 'none';
+
+      var titles = [config.section1Title || 'Section 1', config.section2Title || 'Section 2', config.section3Title || 'Section 3'];
+      sectionNames = [config.section1Name || '', config.section2Name || '', config.section3Name || ''];
+      for (var i = 0; i < 3; i++) {
+        document.getElementById('header-' + (i + 1)).textContent = titles[i];
+        document.getElementById('editor-' + (i + 1)).parentElement.style.display = sectionNames[i] ? 'flex' : 'none';
       }
 
-      var mode = config.inputMode === 'Blank Document' ? 'blank' : 'data';
-
-      if (currentMode !== mode) {
-        currentMode = mode;
-        configurePanel(mode);
-      }
-
-      outputVarId = config.outputVariable || null;
+      outputVars = [config.outputVar1 || null, config.outputVar2 || null, config.outputVar3 || null];
       onSaveId = config.onSave || null;
-      saveBtn.disabled = !outputVarId || !hasUnsavedChanges;
-
-      // Show setup instructions when config is incomplete
-      if (!outputVarId || !onSaveId) {
-        setupHint.classList.add('visible');
-      } else {
-        setupHint.classList.remove('visible');
-      }
 
       if (unsubData) { unsubData(); unsubData = null; }
-      justSaved = false;
-      if (mode === 'data' && config.source && config.markdownColumn) {
-        var sectionBar = document.getElementById('section-bar');
-        var sectionSelect = document.getElementById('section-select');
-        var pluginId = new URLSearchParams(window.location.search).get('id') || 'default';
-        var storageKey = 'sigma-editor-section-' + pluginId;
-        var editorSavedSection = localStorage.getItem(storageKey) || '';
-
-        // Set up section dropdown
-        sectionBar.style.display = config.hideSection ? 'none' : 'flex';
-
-        sectionSelect.onchange = function () {
-          editorSavedSection = sectionSelect.value;
-          localStorage.setItem(storageKey, editorSavedSection);
-          justSaved = false;
-          hasUnsavedChanges = false;
-          if (lastFullData && config.sectionColumn) {
-            var sectionData = lastFullData[config.sectionColumn];
-            var columnData = lastFullData[config.markdownColumn];
-            var selectedSection = sectionSelect.value;
-            if (!selectedSection || !sectionData) return;
-            for (var i = 0; i < sectionData.length; i++) {
-              if (String(sectionData[i]).trim() === selectedSection) {
-                loadContent(columnData[i]);
-                lastReceivedData = columnData[i];
-                return;
-              }
-            }
-          }
-        };
-
-        unsubData = client.elements.subscribeToElementData(config.source, function (data) {
-          lastFullData = data;
-          var columnData = data[config.markdownColumn];
-          if (!columnData || columnData.length === 0) {
-            lastReceivedData = null;
-            if (!hasUnsavedChanges && !justSaved) {
-              isLoading = true;
-              quill.setContents([]);
-              isLoading = false;
-              loadedContent = '';
-              hasUnsavedChanges = false;
-              setStatus('', '');
-            }
-            return;
-          }
-
-          // Section filtering
-          var rowIndex = 0;
-          if (config.sectionColumn) {
-            var sectionData = data[config.sectionColumn];
-            var sectionData2 = config.sectionColumn2 ? data[config.sectionColumn2] : null;
-            if (sectionData) {
-              var fixedSection = config.sectionValue ? String(config.sectionValue).trim() : null;
-              var fixedSection2 = config.sectionValue2 ? String(config.sectionValue2).trim() : null;
-              var targetSection = fixedSection || editorSavedSection || '';
-
-              if (targetSection) {
-                sectionBar.style.display = config.hideSection ? 'none' : 'flex';
-                sectionSelect.innerHTML = '<option value="' + targetSection + '">' + targetSection + '</option>';
-                sectionSelect.value = targetSection;
-
-                rowIndex = -1;
-                var targetLower = targetSection.toLowerCase();
-                var targetLower2 = fixedSection2 ? fixedSection2.toLowerCase() : null;
-                for (var i = 0; i < sectionData.length; i++) {
-                  if (String(sectionData[i]).trim().toLowerCase() === targetLower) {
-                    // If second section column is configured, also check it
-                    if (targetLower2 && sectionData2) {
-                      if (String(sectionData2[i]).trim().toLowerCase() !== targetLower2) continue;
-                    }
-                    rowIndex = i;
-                    break;
-                  }
-                }
-                console.log('[Editor] Section filter:', targetSection, (fixedSection2 ? '+ ' + fixedSection2 : ''), '| Rows:', sectionData.length, '| Match at:', rowIndex);
-                if (rowIndex === -1) {
-                  lastReceivedData = null;
-                  // No data for this section yet - show empty editor ready to write
-                  isLoading = true;
-                  quill.setContents([]);
-                  isLoading = false;
-                  loadedContent = '';
-                  hasUnsavedChanges = false;
-                  setStatus('No content for section "' + targetSection + '" yet', '');
-                  return;
-                }
-              } else {
-                sectionBar.style.display = config.hideSection ? 'none' : 'flex';
-                var uniqueSections = [];
-                for (var i = 0; i < sectionData.length; i++) {
-                  var val = String(sectionData[i]).trim();
-                  if (val && uniqueSections.indexOf(val) === -1) uniqueSections.push(val);
-                }
-                sectionSelect.innerHTML = '<option value="">-- Select --</option>';
-                uniqueSections.forEach(function (s) {
-                  var opt = document.createElement('option');
-                  opt.value = s;
-                  opt.textContent = s;
-                  sectionSelect.appendChild(opt);
-                });
-                setStatus('Select a section or set Section Value in config', '');
-                return;
-              }
-            } else {
-              sectionBar.style.display = 'none';
-            }
-          } else {
-            sectionBar.style.display = 'none';
-          }
-
-          var md = columnData[rowIndex];
-          console.log('[Editor] Loading row', rowIndex, '| content:', md ? ('"' + md.substring(0, 80) + '"') : '(null/empty)', '| justSaved:', justSaved);
-          lastReceivedData = md;
-          // Don't overwrite editor right after saving
-          if (justSaved) {
-            console.log('[Editor] Skipping load — just saved');
-            return;
-          }
-          loadContent(md);
-        });
+      if (config.source && config.markdownColumn && config.sectionColumn) {
+        unsubData = client.elements.subscribeToElementData(config.source, function (data) { loadData(data, config); });
       }
     });
   </script>
-
 </body>
 </html>
