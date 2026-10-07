@@ -159,10 +159,13 @@
       { name: 'sectionColumn2', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['text'], label: 'Section Column 2 (Box)' },
       { name: 'section1Name', type: 'text', label: 'Section 1 Name' },
       { name: 'section1Title', type: 'text', label: 'Section 1 Header' },
+      { name: 'section1Placeholder', type: 'text', label: 'Section 1 Default Comment' },
       { name: 'section2Name', type: 'text', label: 'Section 2 Name' },
       { name: 'section2Title', type: 'text', label: 'Section 2 Header' },
+      { name: 'section2Placeholder', type: 'text', label: 'Section 2 Default Comment' },
       { name: 'section3Name', type: 'text', label: 'Section 3 Name' },
       { name: 'section3Title', type: 'text', label: 'Section 3 Header' },
+      { name: 'section3Placeholder', type: 'text', label: 'Section 3 Default Comment' },
       { name: 'outputVar1', type: 'variable', allowedTypes: ['text'], label: 'Output Variable (Section 1)' },
       { name: 'outputVar2', type: 'variable', allowedTypes: ['text'], label: 'Output Variable (Section 2)' },
       { name: 'outputVar3', type: 'variable', allowedTypes: ['text'], label: 'Output Variable (Section 3)' },
@@ -350,6 +353,7 @@
       if (!col || !sec) return;
       var fixedSlide = config.sectionValue ? String(config.sectionValue).trim().toLowerCase() : null;
       var sec2 = config.sectionColumn2 ? data[config.sectionColumn2] : null;
+      var defaults = [config.section1Placeholder || '', config.section2Placeholder || '', config.section3Placeholder || ''];
       for (var i = 0; i < 3; i++) {
         if (!sectionNames[i]) continue;
         var target = sectionNames[i].toLowerCase().trim();
@@ -370,7 +374,10 @@
           found = true;
           break;
         }
-        if (!found) quills[i].setContents([]);
+        if (!found) {
+          if (defaults[i]) { quills[i].root.innerHTML = '<p style="color:#656d76;">' + defaults[i] + '</p>'; }
+          else { quills[i].setContents([]); }
+        }
       }
       hasUnsavedChanges = false;
       setStatus('', '');
@@ -397,9 +404,11 @@
 
       var titles = [config.section1Title || 'Section 1', config.section2Title || 'Section 2', config.section3Title || 'Section 3'];
       sectionNames = [config.section1Name || '', config.section2Name || '', config.section3Name || ''];
+      var placeholders = [config.section1Placeholder || 'Start writing...', config.section2Placeholder || 'Start writing...', config.section3Placeholder || 'Start writing...'];
       for (var i = 0; i < 3; i++) {
         document.getElementById('header-' + (i + 1)).textContent = titles[i];
         document.getElementById('editor-' + (i + 1)).parentElement.style.display = sectionNames[i] ? 'flex' : 'none';
+        quills[i].root.setAttribute('data-placeholder', placeholders[i]);
       }
 
       outputVars = [config.outputVar1 || null, config.outputVar2 || null, config.outputVar3 || null];
