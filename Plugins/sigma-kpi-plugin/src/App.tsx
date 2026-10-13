@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   useActionTrigger,
   useConfig,
@@ -124,6 +124,21 @@ function manualComparisonText(
 export default function App() {
   const config = useConfig() as Config;
   const mode = (config.mode || 'Manual').toLowerCase();
+
+  // Force re-render when the iframe is resized or becomes visible again.
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const bump = () => setTick((t) => t + 1);
+    const ro = new ResizeObserver(bump);
+    ro.observe(document.documentElement);
+    document.addEventListener('visibilitychange', bump);
+    window.addEventListener('resize', bump);
+    return () => {
+      ro.disconnect();
+      document.removeEventListener('visibilitychange', bump);
+      window.removeEventListener('resize', bump);
+    };
+  }, []);
 
   // Hook calls must be unconditional and stable in count.
   const seg = useBound(config, 'seg_source', 'seg_val');
