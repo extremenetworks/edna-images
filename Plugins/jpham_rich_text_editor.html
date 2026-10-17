@@ -285,7 +285,13 @@
     lsBtn.addEventListener('click', function () { lsMenu.style.display = lsMenu.style.display === 'none' ? 'block' : 'none'; });
     document.querySelectorAll('.ls-option').forEach(function (opt) {
       opt.addEventListener('click', function () {
-        document.querySelectorAll('.section-editor .ql-editor').forEach(function (el) { el.style.lineHeight = opt.getAttribute('data-spacing'); });
+        var sp = opt.getAttribute('data-spacing');
+        document.querySelectorAll('.section-editor .ql-editor').forEach(function (el) {
+          el.style.lineHeight = sp;
+          el.querySelectorAll('p, li, h1, h2, h3, h4, h5, h6, blockquote, pre').forEach(function (block) {
+            block.style.lineHeight = sp;
+          });
+        });
         document.querySelectorAll('.ls-option').forEach(function (o) { o.classList.remove('active'); });
         opt.classList.add('active');
         lsMenu.style.display = 'none';
