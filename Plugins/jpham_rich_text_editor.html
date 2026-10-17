@@ -190,6 +190,13 @@
     });
     Quill.register(IndentStyleAttr, true);
 
+    // Register line-height as a Quill block format so it persists in saved HTML
+    var LineHeightStyle = new Parchment.StyleAttributor('lineHeight', 'line-height', {
+      scope: Parchment.Scope.BLOCK,
+      whitelist: ['1', '1.15', '1.5', '2', '2.5', '3']
+    });
+    Quill.register(LineHeightStyle, true);
+
     // Create 3 Quill editors — no toolbar, just plain editors
     var quills = [];
     for (var idx = 1; idx <= 3; idx++) {
@@ -286,11 +293,10 @@
     document.querySelectorAll('.ls-option').forEach(function (opt) {
       opt.addEventListener('click', function () {
         var sp = opt.getAttribute('data-spacing');
-        document.querySelectorAll('.section-editor .ql-editor').forEach(function (el) {
-          el.style.lineHeight = sp;
-          el.querySelectorAll('p, li, h1, h2, h3, h4, h5, h6, blockquote, pre').forEach(function (block) {
-            block.style.lineHeight = sp;
-          });
+        // Apply line-height through Quill's format system so it persists
+        quills.forEach(function (q) {
+          var len = q.getLength();
+          q.formatText(0, len, 'lineHeight', sp);
         });
         document.querySelectorAll('.ls-option').forEach(function (o) { o.classList.remove('active'); });
         opt.classList.add('active');
