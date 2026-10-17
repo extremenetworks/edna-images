@@ -180,6 +180,15 @@
     Quill.register(SizeStyle, true);
     var AlignStyle = Quill.import('attributors/style/align');
     Quill.register(AlignStyle, true);
+    // Use style-based indent so display plugin can render via inline styles
+    var IndentStyle = Quill.import('attributors/class/indent');
+    // Register a custom style-based indent attributor
+    var Parchment = Quill.import('parchment');
+    var IndentStyleAttr = new Parchment.StyleAttributor('indent', 'padding-left', {
+      scope: Parchment.Scope.BLOCK,
+      whitelist: ['1.5em', '3em', '4.5em', '6em', '7.5em', '9em', '10.5em', '12em']
+    });
+    Quill.register(IndentStyleAttr, true);
 
     // Create 3 Quill editors — no toolbar, just plain editors
     var quills = [];
@@ -214,8 +223,12 @@
           q.format('list', cur.list === val ? false : val);
         } else if (fmt === 'indent') {
           var dir = parseInt(val);
-          var level = (cur.indent || 0) + dir;
-          q.format('indent', level <= 0 ? false : level);
+          var emValues = [false, '1.5em', '3em', '4.5em', '6em', '7.5em', '9em', '10.5em', '12em'];
+          var curStyle = cur.indent || false;
+          var curLevel = curStyle ? emValues.indexOf(curStyle) : 0;
+          if (curLevel < 0) curLevel = 0;
+          var newLevel = Math.max(0, Math.min(8, curLevel + dir));
+          q.format('indent', emValues[newLevel]);
         } else if (fmt === 'align') {
           q.format('align', val || false);
         } else if (fmt === 'link') {
