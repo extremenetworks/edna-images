@@ -194,7 +194,8 @@
       }
       panel.push(
         { name: 'displayTitle', type: 'text', label: 'Display Title' },
-        { name: 'showTitle', type: 'checkbox', label: 'Show Title' }
+        { name: 'showTitle', type: 'checkbox', label: 'Show Title' },
+        { name: 'lineSpacing', type: 'text', label: 'Line Spacing (e.g. 1, 1.5, 2)' }
       );
       client.config.configureEditorPanel(panel);
     }
@@ -265,6 +266,10 @@
 
     function handleConfig(config) {
       currentConfig = config;
+      // Line spacing
+      if (config.lineSpacing) {
+        contentEl.style.lineHeight = config.lineSpacing;
+      }
       // Update title
       var titleEl = document.getElementById('display-title');
       if (config.displayTitle && config.showTitle) {
