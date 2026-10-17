@@ -30,7 +30,6 @@
       flex: 1;
       overflow-y: auto;
       padding: 16px;
-      line-height: 1.2;
     }
 
     .placeholder {
@@ -268,7 +267,9 @@
       currentConfig = config;
       // Line spacing
       if (config.lineSpacing) {
-        contentEl.style.lineHeight = config.lineSpacing;
+        contentEl.style.setProperty('line-height', config.lineSpacing, 'important');
+      } else {
+        contentEl.style.removeProperty('line-height');
       }
       // Update title
       var titleEl = document.getElementById('display-title');
