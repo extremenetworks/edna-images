@@ -65,6 +65,7 @@ export function buildTree(nodes: TreeNode[]): TreeNode | null {
       submitted: null,
       hierarchyPath: null,
       channel: null,
+      rowIndex: null,
       children: [...roots],
       isLeaf: false,
     };
@@ -208,6 +209,7 @@ export function buildTreeFromPaths(nodes: TreeNode[]): TreeNode | null {
             submitted: null,
             hierarchyPath: null,
             channel: null,
+            rowIndex: null,
             children: [],
             isLeaf: false,
           };

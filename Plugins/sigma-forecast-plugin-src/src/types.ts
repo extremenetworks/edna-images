@@ -5,6 +5,8 @@ export interface ForecastRow {
   submitted: boolean | null;
   hierarchyPath: string[] | null;
   channel: string | null;
+  /** Index of this row in the source element's data, for looking up extra columns */
+  rowIndex: number;
 }
 
 export interface ParsedRole {
@@ -24,6 +26,8 @@ export interface TreeNode {
   submitted: boolean | null;
   hierarchyPath: string[] | null;
   channel: string | null;
+  /** Source data row index; null for placeholder ancestors with no data row */
+  rowIndex: number | null;
   children: TreeNode[];
   isLeaf: boolean;
 }

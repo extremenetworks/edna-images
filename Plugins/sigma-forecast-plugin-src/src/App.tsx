@@ -33,6 +33,8 @@ client.config.configureEditorPanel([
   { name: 'submittedCol', type: 'column', source: 'source', allowMultiple: false, label: 'Submitted This Week (optional)' },
   { name: 'channelCol', type: 'column', source: 'source', allowMultiple: false, label: 'Channel (MSP/Non-MSP, optional)' },
   { name: 'noteCol', type: 'column', source: 'source', allowMultiple: false, label: 'Note (optional)' },
+  { name: 'fcShow', type: 'toggle', label: 'Show Forecast button', defaultValue: true },
+  { name: 'fcAction', type: 'action-trigger', label: 'On Forecast Click' },
   { name: 'labelsGroup', type: 'group', label: 'Column Labels (leave blank for default)' },
   { name: 'closedLabel', type: 'text', placeholder: 'Booked', label: 'Booked label' },
   { name: 'openLabel', type: 'text', placeholder: 'Open Funnel', label: 'Open Funnel label' },
@@ -43,14 +45,27 @@ client.config.configureEditorPanel([
   { name: 'm2Label', type: 'text', placeholder: 'M2', label: 'M2 label' },
   { name: 'm3Label', type: 'text', placeholder: 'M3', label: 'M3 label' },
   { name: 'selectedUser', type: 'variable', label: 'Selected Username Variable' },
+  { name: 'selectedVar1', type: 'variable', label: 'Selected Variable 1' },
+  { name: 'selectedVar1Col', type: 'column', source: 'source', allowMultiple: false, label: 'Selected Variable 1 value (column)' },
+  { name: 'selectedVar2', type: 'variable', label: 'Selected Variable 2' },
+  { name: 'selectedVar2Col', type: 'column', source: 'source', allowMultiple: false, label: 'Selected Variable 2 value (column)' },
   { name: 'rowClickAction', type: 'action-trigger', label: 'On Notes Click' },
-  { name: 'showForecast', type: 'toggle', label: 'Show Forecast button', defaultValue: true },
-  { name: 'forecastAction', type: 'action-trigger', label: 'On Forecast Click' },
 ]);
 
 /** Config values for actions, variables and text are strings; ignore anything else. */
 function configString(value: unknown): string {
-  return typeof value === 'string' ? value : '';
+  if (typeof value === 'string') return value;
+  // Column configs can arrive as a single-item array
+  if (Array.isArray(value)) return typeof value[0] === 'string' ? value[0] : '';
+  return '';
+}
+
+/** Toggle values may arrive as booleans, strings or numbers; unset falls back to the default. */
+function configBool(value: unknown, defaultValue: boolean): boolean {
+  if (typeof value === 'boolean') return value;
+  if (value === 'false' || value === 0 || value === '0') return false;
+  if (value === 'true' || value === 1 || value === '1') return true;
+  return defaultValue;
 }
 
 function getInitials(name: string): string {
@@ -113,6 +128,7 @@ function groupChannelNodes(node: TreeNode): void {
       submitted: first.submitted,
       hierarchyPath: first.hierarchyPath,
       channel: null,
+      rowIndex: null,
       children: variants.map((v) => {
         // Rename children to show channel label instead of person name
         return { ...v, name: v.channel!, isLeaf: true, children: [] };
@@ -150,21 +166,51 @@ function App() {
   const rowClickActionConfig = configString(config.rowClickAction);
   const triggerRowClick = useActionTrigger(rowClickActionConfig);
 
-  const handleRowClick = useCallback((name: string) => {
-    if (selectedUserControl) setSelectedUser(name);
-    if (rowClickActionConfig) triggerRowClick();
-  }, [selectedUserControl, setSelectedUser, rowClickActionConfig, triggerRowClick]);
+  // Extra variables work like the username: on any Notes or Forecast click, each is set
+  // to the clicked person's value in its mapped column.
+  const selectedVar1Control = configString(config.selectedVar1);
+  const [, setSelectedVar1] = useVariable(selectedVar1Control);
+  const selectedVar1Col = configString(config.selectedVar1Col);
+  const selectedVar2Control = configString(config.selectedVar2);
+  const [, setSelectedVar2] = useVariable(selectedVar2Control);
+  const selectedVar2Col = configString(config.selectedVar2Col);
 
-  // Forecast button: sets the same username control, then fires its own action.
+  const setPersonVariables = useCallback((node: TreeNode) => {
+    if (selectedUserControl) setSelectedUser(node.name);
+    // Placeholder ancestors have no source row, so they have no column values
+    const valueFrom = (colId: string) =>
+      colId && node.rowIndex != null ? String(data[colId]?.[node.rowIndex] ?? '') : '';
+    if (selectedVar1Control) setSelectedVar1(valueFrom(selectedVar1Col));
+    if (selectedVar2Control) setSelectedVar2(valueFrom(selectedVar2Col));
+  }, [
+    selectedUserControl, setSelectedUser, data,
+    selectedVar1Control, setSelectedVar1, selectedVar1Col,
+    selectedVar2Control, setSelectedVar2, selectedVar2Col,
+  ]);
+
+  const handleRowClick = useCallback((node: TreeNode) => {
+    setPersonVariables(node);
+    if (rowClickActionConfig) triggerRowClick();
+  }, [setPersonVariables, rowClickActionConfig, triggerRowClick]);
+
+  // Forecast button: sets the same variables as Notes, then fires its own action.
   // Shown whenever the "Show Forecast button" toggle is on (default).
-  const showForecast = config.showForecast !== false;
-  const forecastActionConfig = configString(config.forecastAction);
+  // Sigma follows a toggle change with a config update that omits the key, so an
+  // unset value means "unchanged", not "back to default". Keep the last value received.
+  const [showForecast, setShowForecast] = useState(() => configBool(config.fcShow, true));
+  React.useEffect(() => {
+    if (config.fcShow !== undefined && config.fcShow !== null) {
+      setShowForecast(configBool(config.fcShow, true));
+    }
+  }, [config.fcShow]);
+
+  const forecastActionConfig = configString(config.fcAction);
   const triggerForecast = useActionTrigger(forecastActionConfig);
 
-  const handleForecastClick = useCallback((name: string) => {
-    if (selectedUserControl) setSelectedUser(name);
+  const handleForecastClick = useCallback((node: TreeNode) => {
+    setPersonVariables(node);
     if (forecastActionConfig) triggerForecast();
-  }, [selectedUserControl, setSelectedUser, forecastActionConfig, triggerForecast]);
+  }, [setPersonVariables, forecastActionConfig, triggerForecast]);
 
   // Measure column definitions
   const measureDefs = useMemo(() => {
@@ -324,7 +370,7 @@ function App() {
         }
       }
 
-      rows.push({ name, role, values, submitted, hierarchyPath, channel });
+      rows.push({ name, role, values, submitted, hierarchyPath, channel, rowIndex: i });
     }
 
     // Parse roles and build tree nodes
@@ -341,6 +387,7 @@ function App() {
       submitted: row.submitted,
       hierarchyPath: row.hierarchyPath,
       channel: row.channel,
+      rowIndex: row.rowIndex,
       children: [],
       isLeaf: false,
     }));

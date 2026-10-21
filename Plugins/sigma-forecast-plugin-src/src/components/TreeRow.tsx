@@ -11,8 +11,8 @@ interface Props {
   measureColumns: MeasureColumn[];
   isExpanded: boolean;
   onToggle: (nodeId: string) => void;
-  onRowClick?: (name: string) => void;
-  onForecastClick?: (name: string) => void;
+  onRowClick?: (node: TreeNode) => void;
+  onForecastClick?: (node: TreeNode) => void;
   forecastLeft?: number;
   lastFrozen?: 'status' | 'notes' | 'forecast';
   onFocus?: (nodeId: string) => void;
@@ -86,7 +86,7 @@ export function TreeRow({ node, depth, measureColumns, isExpanded, onToggle, onR
                 {node.name}
               </button>
             ) : (
-              <span className="name-text">{node.name}</span>
+              <span className="name-text" title={node.name}>{node.name}</span>
             )}
             <span className="role-text">{roleDisplay}</span>
           </div>
@@ -98,14 +98,14 @@ export function TreeRow({ node, depth, measureColumns, isExpanded, onToggle, onR
       {onRowClick && (
         <td className={`col-notes td-sticky td-sticky-notes${lastFrozen === 'notes' ? ' frozen-edge' : ''}`}>
           {!isPlaceholder && (
-            <NoteButton name={node.name} onClick={() => onRowClick(node.name)} />
+            <NoteButton name={node.name} onClick={() => onRowClick(node)} />
           )}
         </td>
       )}
       {onForecastClick && (
         <td className="col-forecast td-sticky frozen-edge" style={{ left: forecastLeft }}>
           {!isPlaceholder && (
-            <ForecastButton name={node.name} onClick={() => onForecastClick(node.name)} />
+            <ForecastButton name={node.name} onClick={() => onForecastClick(node)} />
           )}
         </td>
       )}

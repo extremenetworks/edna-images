@@ -10,8 +10,8 @@ interface Props {
   isExpanded: boolean;
   onToggle: (nodeId: string) => void;
   onFocus?: (nodeId: string) => void;
-  onRowClick?: (name: string) => void;
-  onForecastClick?: (name: string) => void;
+  onRowClick?: (node: TreeNode) => void;
+  onForecastClick?: (node: TreeNode) => void;
 }
 
 export function MobileCard({ node, depth, measureColumns, isExpanded, onToggle, onFocus, onRowClick, onForecastClick }: Props) {
@@ -63,7 +63,7 @@ export function MobileCard({ node, depth, measureColumns, isExpanded, onToggle, 
                 {node.name}
               </button>
             ) : (
-              <span className="name-text">{node.name}</span>
+              <span className="name-text" title={node.name}>{node.name}</span>
             )}
             <span className="role-text">{roleDisplay}</span>
           </div>
@@ -71,10 +71,10 @@ export function MobileCard({ node, depth, measureColumns, isExpanded, onToggle, 
         <div className="status-cell">
           <span className={`status-dot ${submitted ? 'status-submitted' : 'status-missing'}`} />
           {onRowClick && !node.id.startsWith('placeholder-') && (
-            <NoteButton name={node.name} onClick={() => onRowClick(node.name)} />
+            <NoteButton name={node.name} onClick={() => onRowClick(node)} />
           )}
           {onForecastClick && !node.id.startsWith('placeholder-') && (
-            <ForecastButton name={node.name} onClick={() => onForecastClick(node.name)} />
+            <ForecastButton name={node.name} onClick={() => onForecastClick(node)} />
           )}
         </div>
       </div>

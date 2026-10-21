@@ -11,8 +11,8 @@ interface Props {
   measureColumns: MeasureColumn[];
   expandedIds: Set<string>;
   onToggle: (nodeId: string) => void;
-  onRowClick?: (name: string) => void;
-  onForecastClick?: (name: string) => void;
+  onRowClick?: (node: TreeNode) => void;
+  onForecastClick?: (node: TreeNode) => void;
   onFocus: (nodeId: string) => void;
   onClearFocus: () => void;
 }

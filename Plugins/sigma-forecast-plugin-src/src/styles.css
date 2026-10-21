@@ -694,3 +694,27 @@ body {
   width: 72px;
   min-width: 72px;
 }
+
+/* ── Name column: fixed width so long names truncate instead of widening the
+   column under the frozen Status/Notes columns ───────────────────────────── */
+.forecast-table th.col-name,
+.forecast-table td.col-name {
+  width: 260px;
+  min-width: 260px;
+  max-width: 260px;
+  overflow: hidden;
+}
+
+.name-cell {
+  overflow: hidden;
+}
+
+.name-info {
+  flex: 1;
+}
+
+.name-info .name-text,
+.name-info .role-text {
+  display: block;
+  max-width: 100%;
+}
