@@ -43,8 +43,15 @@ client.config.configureEditorPanel([
   { name: 'm2Label', type: 'text', placeholder: 'M2', label: 'M2 label' },
   { name: 'm3Label', type: 'text', placeholder: 'M3', label: 'M3 label' },
   { name: 'selectedUser', type: 'variable', label: 'Selected Username Variable' },
-  { name: 'rowClickAction', type: 'action-trigger', label: 'On Row Click' },
+  { name: 'rowClickAction', type: 'action-trigger', label: 'On Notes Click' },
+  { name: 'showForecast', type: 'toggle', label: 'Show Forecast button', defaultValue: true },
+  { name: 'forecastAction', type: 'action-trigger', label: 'On Forecast Click' },
 ]);
+
+/** Config values for actions, variables and text are strings; ignore anything else. */
+function configString(value: unknown): string {
+  return typeof value === 'string' ? value : '';
+}
 
 function getInitials(name: string): string {
   const parts = name.trim().split(/\s+/);
@@ -133,20 +140,31 @@ function App() {
   const submittedColId = (config.submittedCol as string) || '';
   const channelColId = (config.channelCol as string) || '';
 
-  // Sigma variable + action for row click. Sigma resolves the variable by the control
-  // ID stored in the 'selectedUser' config field (the control picked in the editor
-  // panel), not by the config key name. Passing the key name gives
-  // "Control variable name: selectedUser not found".
-  const selectedUserControl = (useConfig('selectedUser') as string) || '';
+  // Sigma variable + action for the Notes icon. Sigma resolves both by the ID stored in
+  // the config field, not by the config key name.
+  // Read every value from the full config: the SDK's useConfig('key') can return the
+  // whole config object when a key is unchanged/unset, which Sigma rejects with
+  // "Invalid plugin action trigger id [object Object]".
+  const selectedUserControl = configString(config.selectedUser);
   const [, setSelectedUser] = useVariable(selectedUserControl);
-  const rowClickActionConfig = (useConfig('rowClickAction') as string) || '';
-  // Same as the variable: Sigma resolves the trigger by the ID stored in the config field
+  const rowClickActionConfig = configString(config.rowClickAction);
   const triggerRowClick = useActionTrigger(rowClickActionConfig);
 
   const handleRowClick = useCallback((name: string) => {
     if (selectedUserControl) setSelectedUser(name);
     if (rowClickActionConfig) triggerRowClick();
   }, [selectedUserControl, setSelectedUser, rowClickActionConfig, triggerRowClick]);
+
+  // Forecast button: sets the same username control, then fires its own action.
+  // Shown whenever the "Show Forecast button" toggle is on (default).
+  const showForecast = config.showForecast !== false;
+  const forecastActionConfig = configString(config.forecastAction);
+  const triggerForecast = useActionTrigger(forecastActionConfig);
+
+  const handleForecastClick = useCallback((name: string) => {
+    if (selectedUserControl) setSelectedUser(name);
+    if (forecastActionConfig) triggerForecast();
+  }, [selectedUserControl, setSelectedUser, forecastActionConfig, triggerForecast]);
 
   // Measure column definitions
   const measureDefs = useMemo(() => {
@@ -166,17 +184,17 @@ function App() {
     return defs;
   }, []);
 
-  // Custom column labels. Each is read with its own useConfig(key) hook so a text edit
-  // in the editor panel reliably triggers a re-render (the whole-config object may not).
-  const labelOverrides: Record<string, string | undefined> = {
-    closed: useConfig('closedLabel'),
-    open: useConfig('openLabel'),
-    low: useConfig('lowLabel'),
-    mlv: useConfig('mlvLabel'),
-    high: useConfig('highLabel'),
-    m1: useConfig('m1Label'),
-    m2: useConfig('m2Label'),
-    m3: useConfig('m3Label'),
+  // Custom column labels from the editor panel (blank keeps the default).
+  // labelKey is rebuilt every render so the memo below picks up text edits.
+  const labelOverrides: Record<string, string> = {
+    closed: configString(config.closedLabel),
+    open: configString(config.openLabel),
+    low: configString(config.lowLabel),
+    mlv: configString(config.mlvLabel),
+    high: configString(config.highLabel),
+    m1: configString(config.m1Label),
+    m2: configString(config.m2Label),
+    m3: configString(config.m3Label),
   };
   const labelKey = Object.values(labelOverrides).map((v) => v ?? '').join('\u0000');
 
@@ -408,7 +426,8 @@ function App() {
       measureColumns={measureColumns}
       expandedIds={expandedIds}
       onToggle={toggleExpand}
-      onRowClick={rowClickActionConfig || selectedUserControl ? handleRowClick : undefined}
+      onRowClick={rowClickActionConfig ? handleRowClick : undefined}
+      onForecastClick={showForecast ? handleForecastClick : undefined}
       onFocus={handleFocus}
       onClearFocus={clearFocus}
     />

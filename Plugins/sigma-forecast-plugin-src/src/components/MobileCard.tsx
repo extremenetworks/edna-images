@@ -1,7 +1,7 @@
 import React from 'react';
 import type { TreeNode, MeasureColumn } from '../types';
 import { formatCompact, formatWoW } from '../lib/format';
-import { NoteButton } from './TreeRow';
+import { NoteButton, ForecastButton } from './TreeRow';
 
 interface Props {
   node: TreeNode;
@@ -11,9 +11,10 @@ interface Props {
   onToggle: (nodeId: string) => void;
   onFocus?: (nodeId: string) => void;
   onRowClick?: (name: string) => void;
+  onForecastClick?: (name: string) => void;
 }
 
-export function MobileCard({ node, depth, measureColumns, isExpanded, onToggle, onFocus, onRowClick }: Props) {
+export function MobileCard({ node, depth, measureColumns, isExpanded, onToggle, onFocus, onRowClick, onForecastClick }: Props) {
   const hasChildren = node.children.length > 0;
   const isAggregate = !node.isLeaf;
   const indentPx = depth * 16;
@@ -71,6 +72,9 @@ export function MobileCard({ node, depth, measureColumns, isExpanded, onToggle, 
           <span className={`status-dot ${submitted ? 'status-submitted' : 'status-missing'}`} />
           {onRowClick && !node.id.startsWith('placeholder-') && (
             <NoteButton name={node.name} onClick={() => onRowClick(node.name)} />
+          )}
+          {onForecastClick && !node.id.startsWith('placeholder-') && (
+            <ForecastButton name={node.name} onClick={() => onForecastClick(node.name)} />
           )}
         </div>
       </div>

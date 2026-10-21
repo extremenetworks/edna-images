@@ -12,13 +12,16 @@ interface Props {
   isExpanded: boolean;
   onToggle: (nodeId: string) => void;
   onRowClick?: (name: string) => void;
+  onForecastClick?: (name: string) => void;
+  forecastLeft?: number;
+  lastFrozen?: 'status' | 'notes' | 'forecast';
   onFocus?: (nodeId: string) => void;
   isHovered?: boolean;
   onMouseEnter?: () => void;
   onMouseLeave?: () => void;
 }
 
-export function TreeRow({ node, depth, measureColumns, isExpanded, onToggle, onRowClick, onFocus, isHovered, onMouseEnter, onMouseLeave }: Props) {
+export function TreeRow({ node, depth, measureColumns, isExpanded, onToggle, onRowClick, onForecastClick, forecastLeft, lastFrozen = 'status', onFocus, isHovered, onMouseEnter, onMouseLeave }: Props) {
   const hasChildren = node.children.length > 0;
   const isAggregate = !node.isLeaf;
   const indentPx = depth * 24;
@@ -89,13 +92,20 @@ export function TreeRow({ node, depth, measureColumns, isExpanded, onToggle, onR
           </div>
         </div>
       </td>
-      <td className={`col-status td-sticky td-sticky-status${onRowClick ? '' : ' frozen-edge'}`}>
+      <td className={`col-status td-sticky td-sticky-status${lastFrozen === 'status' ? ' frozen-edge' : ''}`}>
         <StatusDot submitted={submitted} />
       </td>
       {onRowClick && (
-        <td className="col-notes td-sticky td-sticky-notes frozen-edge">
+        <td className={`col-notes td-sticky td-sticky-notes${lastFrozen === 'notes' ? ' frozen-edge' : ''}`}>
           {!isPlaceholder && (
             <NoteButton name={node.name} onClick={() => onRowClick(node.name)} />
+          )}
+        </td>
+      )}
+      {onForecastClick && (
+        <td className="col-forecast td-sticky frozen-edge" style={{ left: forecastLeft }}>
+          {!isPlaceholder && (
+            <ForecastButton name={node.name} onClick={() => onForecastClick(node.name)} />
           )}
         </td>
       )}
@@ -147,6 +157,25 @@ export function NoteButton({ name, onClick }: { name: string; onClick: () => voi
         <path d="M3 2.5h7l3 3v8a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1v-10a1 1 0 0 1 1-1z" />
         <path d="M10 2.5v3h3" />
         <path d="M4.5 8.5h6M4.5 11h4" />
+      </svg>
+    </button>
+  );
+}
+
+/** Opens the forecast entry for this person by firing the plugin's forecast action. */
+export function ForecastButton({ name, onClick }: { name: string; onClick: () => void }) {
+  return (
+    <button
+      className="note-btn"
+      onClick={(e) => { e.stopPropagation(); onClick(); }}
+      title={`Enter ${name}'s forecast`}
+      aria-label={`Enter ${name}'s forecast`}
+    >
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor"
+        strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M2 13.5h12" />
+        <path d="M3 10.5l3.5-3.5 2.5 2.5L13.5 5" />
+        <path d="M10.5 5h3v3" />
       </svg>
     </button>
   );

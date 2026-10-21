@@ -12,11 +12,16 @@ interface Props {
   expandedIds: Set<string>;
   onToggle: (nodeId: string) => void;
   onRowClick?: (name: string) => void;
+  onForecastClick?: (name: string) => void;
   onFocus: (nodeId: string) => void;
   onClearFocus: () => void;
 }
 
-export function ForecastTable({ root, ancestors, measureColumns, expandedIds, onToggle, onRowClick, onFocus, onClearFocus }: Props) {
+// Frozen column offsets: Name 260px, Status 56px, Notes 56px
+const NOTES_LEFT = 316;
+const NOTES_WIDTH = 56;
+
+export function ForecastTable({ root, ancestors, measureColumns, expandedIds, onToggle, onRowClick, onForecastClick, onFocus, onClearFocus }: Props) {
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < MOBILE_BREAKPOINT);
 
   useEffect(() => {
@@ -27,6 +32,9 @@ export function ForecastTable({ root, ancestors, measureColumns, expandedIds, on
 
   const flatRows = flattenTree(root, expandedIds, 0);
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
+  // Forecast column sits after Notes when Notes is shown
+  const forecastLeft = onRowClick ? NOTES_LEFT + NOTES_WIDTH : NOTES_LEFT;
+  const lastFrozen = onForecastClick ? 'forecast' : onRowClick ? 'notes' : 'status';
 
   const breadcrumb = ancestors.length > 0 && (
     <FocusBar ancestors={ancestors} current={root} onFocus={onFocus} onClear={onClearFocus} />
@@ -47,6 +55,7 @@ export function ForecastTable({ root, ancestors, measureColumns, expandedIds, on
               onToggle={onToggle}
               onFocus={item.depth > 0 ? onFocus : undefined}
               onRowClick={onRowClick}
+              onForecastClick={onForecastClick}
             />
           ))}
         </div>
@@ -62,8 +71,13 @@ export function ForecastTable({ root, ancestors, measureColumns, expandedIds, on
           <thead>
             <tr>
               <th className="col-name th-sticky">Name</th>
-              <th className={`col-status th-sticky${onRowClick ? '' : ' frozen-edge'}`}>Status</th>
-              {onRowClick && <th className="col-notes th-sticky frozen-edge">Notes</th>}
+              <th className={`col-status th-sticky${lastFrozen === 'status' ? ' frozen-edge' : ''}`}>Status</th>
+              {onRowClick && (
+                <th className={`col-notes th-sticky${lastFrozen === 'notes' ? ' frozen-edge' : ''}`}>Notes</th>
+              )}
+              {onForecastClick && (
+                <th className="col-forecast th-sticky frozen-edge" style={{ left: forecastLeft }}>Forecast</th>
+              )}
               {measureColumns.map((mc) => (
                 <th key={mc.key} className="col-measure th-top">{mc.label}</th>
               ))}
@@ -79,6 +93,9 @@ export function ForecastTable({ root, ancestors, measureColumns, expandedIds, on
                 isExpanded={expandedIds.has(item.node.id)}
                 onToggle={onToggle}
                 onRowClick={onRowClick}
+                onForecastClick={onForecastClick}
+                forecastLeft={forecastLeft}
+                lastFrozen={lastFrozen}
                 onFocus={item.depth > 0 ? onFocus : undefined}
                 isHovered={hoveredIdx === idx}
                 onMouseEnter={() => setHoveredIdx(idx)}
