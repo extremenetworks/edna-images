@@ -13,6 +13,7 @@ This folder is the **source code**. The built plugin that Sigma loads lives in `
 - **Stacked coverage bar** on MLV: booked (green) and open funnel (blue) as a share of MLV
 - **Focus view**: click a name to show only that person's subtree; a breadcrumb bar shows the levels above, with **Show all** to return
 - **Notes column**: a note icon per person fires a Sigma action and sets a workbook control to that person's name
+- **Forecast column**: a forecast icon per person fires a separate Sigma action (and sets the same control); can be turned off in the editor panel
 - **Custom column labels** set in the editor panel
 - **Self-reports**: a person who reports to themselves appears at both positions
 - **Channel breakout** (optional): rows for the same person with different channel values (e.g. MSP / Non-MSP) are grouped under one total
@@ -32,8 +33,10 @@ This folder is the **source code**. The built plugin that Sigma loads lives in `
 | Submitted This Week | Optional | Boolean for the status dot |
 | Channel | Optional | Channel breakout |
 | Column Labels | Optional | Rename any measure column; blank keeps the default |
-| Selected Username Variable | Optional | Workbook control set to the person whose note icon was clicked |
-| On Row Click | Optional | Action fired by the note icon. The Notes column only appears when this or the variable is set |
+| Selected Username Variable | Optional | Workbook control set to the person whose Notes or Forecast icon was clicked |
+| On Notes Click | Optional | Action fired by the note icon. The Notes column only appears when this is set |
+| Show Forecast button | Optional | Toggle (on by default) to show the Forecast column |
+| On Forecast Click | Optional | Action fired by the forecast icon |
 
 ### Hierarchy path format (preferred)
 
@@ -70,5 +73,5 @@ Commit the new files in `../sigma-forecast-plugin/` **without deleting the old `
 ## SDK notes
 
 - `useVariable` and `useActionTrigger` must be given the **value** stored in the config field (the control / trigger ID), not the config key name. Passing the key name gives "Control variable name: … not found" and the action never fires.
-- Read editor-panel text fields with `useConfig('key')` so edits re-render reliably.
+- Read every value from the full `useConfig()` object. The per-key form `useConfig('key')` can return the whole config object, which Sigma rejects as an action trigger ID ("Invalid plugin action trigger id [object Object]").
 - `border-collapse: separate` is required for the frozen columns (`position: sticky`) to work inside Sigma's iframe.
