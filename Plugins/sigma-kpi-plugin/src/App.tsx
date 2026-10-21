@@ -413,6 +413,17 @@ export default function App() {
   );
 
   if (kpis.length === 0) {
+    // Config not received yet, or a source is set but data hasn't arrived → still loading.
+    const configLoaded = Object.keys(config).length > 0;
+    const hasSource =
+      (mode === 'auto segment' && !!seg.srcId) || kpiSources.some((b) => b.srcId && b.colId);
+    if (!configLoaded || hasSource) {
+      return (
+        <div className="plugin-message">
+          <div className="kpi-spinner" role="status" aria-label="Loading" />
+        </div>
+      );
+    }
     return (
       <div className="plugin-message">
         <p>Configure a KPI in the element panel: select a Source and Value Column.</p>
