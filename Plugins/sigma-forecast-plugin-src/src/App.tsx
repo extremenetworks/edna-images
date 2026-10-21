@@ -144,7 +144,18 @@ function groupChannelNodes(node: TreeNode): void {
 }
 
 function App() {
-  const config = useConfig();
+  // Sigma sometimes sends config updates that omit keys it already sent, so a missing
+  // key means "unchanged". Merge each update over the last known values.
+  const latestConfig = useConfig();
+  const configRef = React.useRef<Record<string, unknown>>({});
+  const config = useMemo(() => {
+    const merged = { ...configRef.current };
+    for (const [k, v] of Object.entries(latestConfig ?? {})) {
+      if (v !== undefined) merged[k] = v;
+    }
+    configRef.current = merged;
+    return merged as typeof latestConfig;
+  }, [latestConfig]);
   const sourceId = (config.source as string) || '';
   const data = useElementData(sourceId);
   const columns = useElementColumns(sourceId);
@@ -178,12 +189,26 @@ function App() {
   const setPersonVariables = useCallback((node: TreeNode) => {
     if (selectedUserControl) setSelectedUser(node.name);
     // Placeholder ancestors have no source row, so they have no column values
-    const valueFrom = (colId: string) =>
-      colId && node.rowIndex != null ? String(data[colId]?.[node.rowIndex] ?? '') : '';
+    // The person's latest row can leave descriptive columns blank, so fall back to
+    // any of their rows that has a value
+    const valueFrom = (colId: string) => {
+      if (!colId || node.rowIndex == null) return '';
+      const col = data[colId];
+      if (!col) return '';
+      const own = col[node.rowIndex];
+      if (own != null && String(own).trim() !== '') return String(own);
+      const names = nameColId ? data[nameColId] : undefined;
+      if (!names) return '';
+      for (let i = 0; i < col.length; i++) {
+        const v = col[i];
+        if (v != null && String(v).trim() !== '' && String(names[i] ?? '').trim() === node.name) return String(v);
+      }
+      return '';
+    };
     if (selectedVar1Control) setSelectedVar1(valueFrom(selectedVar1Col));
     if (selectedVar2Control) setSelectedVar2(valueFrom(selectedVar2Col));
   }, [
-    selectedUserControl, setSelectedUser, data,
+    selectedUserControl, setSelectedUser, data, nameColId,
     selectedVar1Control, setSelectedVar1, selectedVar1Col,
     selectedVar2Control, setSelectedVar2, selectedVar2Col,
   ]);
