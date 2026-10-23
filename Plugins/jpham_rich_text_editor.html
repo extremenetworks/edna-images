@@ -200,7 +200,13 @@
     // Create 3 Quill editors — no toolbar, just plain editors
     var quills = [];
     for (var idx = 1; idx <= 3; idx++) {
-      quills.push(new Quill('#editor-' + idx, { theme: 'snow', modules: { toolbar: false }, placeholder: 'Start writing...' }));
+      quills.push(new Quill('#editor-' + idx, {
+        theme: 'snow',
+        // 'image' is deliberately left out of formats so images can't be pasted, dropped, or inserted
+        formats: ['header', 'bold', 'italic', 'underline', 'strike', 'list', 'indent', 'align', 'link', 'size', 'color', 'lineHeight', 'blockquote', 'code-block'],
+        modules: { toolbar: false, uploader: { handler: function () { setStatus('Images are not allowed in comments.', 'error'); } } },
+        placeholder: 'Start writing...'
+      }));
     }
 
     // --- Active Editor + Selection Tracking ---
@@ -325,6 +331,9 @@
     var outputVars = [null, null, null];
     var onSaveId = null;
     var sectionNames = ['', '', ''];
+    // Remove any <img> tags (images are not allowed in comments)
+    function stripImages(html) { return String(html).replace(/<img\b[^>]*>/gi, ''); }
+
     function setStatus(msg, type) { statusEl.textContent = msg; statusEl.className = 'status' + (type ? ' ' + type : ''); }
 
     quills.forEach(function (q) {
@@ -340,7 +349,7 @@
       setStatus('Saving...', '');
       try {
         for (var i = 0; i < 3; i++) {
-          if (outputVars[i]) sdkSetVariable(outputVars[i], quills[i].root.innerHTML);
+          if (outputVars[i]) sdkSetVariable(outputVars[i], stripImages(quills[i].root.innerHTML));
         }
         hasUnsavedChanges = false;
         setStatus('Saved', 'saved');
@@ -394,7 +403,7 @@
             if (String(sec[j]).trim().toLowerCase() !== target) continue;
           }
           var c = col[j];
-          if (c && c.trim()) quills[i].root.innerHTML = c;
+          if (c && c.trim()) quills[i].root.innerHTML = stripImages(c);
           else quills[i].setContents([]);
           found = true;
           break;
