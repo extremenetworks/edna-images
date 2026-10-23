@@ -45,13 +45,13 @@ client.config.configureEditorPanel([
   { name: 'm2Label', type: 'text', placeholder: 'M2', label: 'M2 label' },
   { name: 'm3Label', type: 'text', placeholder: 'M3', label: 'M3 label' },
   { name: 'selectedUser', type: 'variable', label: 'Selected Username Variable' },
+  { name: 'refreshControl', type: 'variable', label: 'Reload when this control changes' },
   { name: 'selectedVar1', type: 'variable', label: 'Selected Variable 1' },
   { name: 'selectedVar1Col', type: 'column', source: 'source', allowMultiple: false, label: 'Selected Variable 1 value (column)' },
   { name: 'selectedVar2', type: 'variable', label: 'Selected Variable 2' },
   { name: 'selectedVar2Col', type: 'column', source: 'source', allowMultiple: false, label: 'Selected Variable 2 value (column)' },
   { name: 'rowClickAction', type: 'action-trigger', label: 'On Notes Click' },
   { name: 'refreshData', type: 'action-effect', label: 'Refresh data' },
-  { name: 'refreshControl', type: 'variable', label: 'Reload when this control changes' },
 ]);
 
 /** Config values for actions, variables and text are strings; ignore anything else. */
