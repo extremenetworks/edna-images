@@ -160,18 +160,20 @@ function App() {
   const sourceId = (config.source as string) || '';
   // Sigma doesn't always push new data after the source refreshes. The "Refresh data"
   // plugin action re-subscribes, which makes Sigma send the current data.
-  // The source may still be reloading when the action fires, so re-subscribe a few
-  // times over the next several seconds.
+  // The source may still be reloading when the action fires, so re-subscribe twice,
+  // then reload the plugin.
   const [refreshKey, setRefreshKey] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   const refreshTimers = React.useRef<number[]>([]);
   const handleRefresh = useCallback(() => {
     refreshTimers.current.forEach((t) => window.clearTimeout(t));
     setRefreshing(true);
-    refreshTimers.current = [0, 1500, 4000, 8000].map((ms) =>
+    refreshTimers.current = [0, 1500].map((ms) =>
       window.setTimeout(() => setRefreshKey((k) => k + 1), ms),
     );
-    refreshTimers.current.push(window.setTimeout(() => setRefreshing(false), 8500));
+    // Re-subscribing alone doesn't always get fresh data; a full reload does, the same
+    // as scrolling the plugin out of view and back.
+    refreshTimers.current.push(window.setTimeout(() => window.location.reload(), 3000));
   }, []);
   React.useEffect(() => () => refreshTimers.current.forEach((t) => window.clearTimeout(t)), []);
   useActionEffect('refreshData', handleRefresh);
