@@ -49,6 +49,8 @@ client.config.configureEditorPanel([
   { name: 'selectedVar1Col', type: 'column', source: 'source', allowMultiple: false, label: 'Selected Variable 1 value (column)' },
   { name: 'selectedVar2', type: 'variable', label: 'Selected Variable 2' },
   { name: 'selectedVar2Col', type: 'column', source: 'source', allowMultiple: false, label: 'Selected Variable 2 value (column)' },
+  { name: 'selectedVar3', type: 'variable', label: 'Selected Variable 3' },
+  { name: 'selectedVar3Col', type: 'column', source: 'source', allowMultiple: false, label: 'Selected Variable 3 value (column)' },
   { name: 'rowClickAction', type: 'action-trigger', label: 'On Notes Click' },
 ]);
 
@@ -185,6 +187,9 @@ function App() {
   const selectedVar2Control = configString(config.selectedVar2);
   const [, setSelectedVar2] = useVariable(selectedVar2Control);
   const selectedVar2Col = configString(config.selectedVar2Col);
+  const selectedVar3Control = configString(config.selectedVar3);
+  const [, setSelectedVar3] = useVariable(selectedVar3Control);
+  const selectedVar3Col = configString(config.selectedVar3Col);
 
   const setPersonVariables = useCallback((node: TreeNode) => {
     if (selectedUserControl) setSelectedUser(node.name);
@@ -207,10 +212,12 @@ function App() {
     };
     if (selectedVar1Control) setSelectedVar1(valueFrom(selectedVar1Col));
     if (selectedVar2Control) setSelectedVar2(valueFrom(selectedVar2Col));
+    if (selectedVar3Control) setSelectedVar3(valueFrom(selectedVar3Col));
   }, [
     selectedUserControl, setSelectedUser, data, nameColId,
     selectedVar1Control, setSelectedVar1, selectedVar1Col,
     selectedVar2Control, setSelectedVar2, selectedVar2Col,
+    selectedVar3Control, setSelectedVar3, selectedVar3Col,
   ]);
 
   const handleRowClick = useCallback((node: TreeNode) => {
