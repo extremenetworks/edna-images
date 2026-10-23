@@ -718,16 +718,3 @@ body {
   display: block;
   max-width: 100%;
 }
-
-/* Shown briefly while the "Refresh data" action reloads the source */
-.refresh-indicator {
-  position: fixed;
-  top: 8px;
-  right: 12px;
-  z-index: 20;
-  padding: 4px 10px;
-  border-radius: 12px;
-  background: #333333;
-  color: #fcfcfc;
-  font-size: 12px;
-}

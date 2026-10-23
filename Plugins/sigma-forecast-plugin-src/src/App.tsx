@@ -5,7 +5,7 @@ import {
   useElementColumns,
   useVariable,
   useActionTrigger,
-  useActionEffect,
+  useElementData,
 } from '@sigmacomputing/plugin';
 import { parseRole, buildTree, buildTreeFromPaths } from './lib/hierarchy';
 import { computeRollups } from './lib/rollup';
@@ -50,7 +50,6 @@ client.config.configureEditorPanel([
   { name: 'selectedVar2', type: 'variable', label: 'Selected Variable 2' },
   { name: 'selectedVar2Col', type: 'column', source: 'source', allowMultiple: false, label: 'Selected Variable 2 value (column)' },
   { name: 'rowClickAction', type: 'action-trigger', label: 'On Notes Click' },
-  { name: 'refreshData', type: 'action-effect', label: 'Refresh data' },
 ]);
 
 /** Config values for actions, variables and text are strings; ignore anything else. */
@@ -158,38 +157,7 @@ function App() {
     return merged as typeof latestConfig;
   }, [latestConfig]);
   const sourceId = (config.source as string) || '';
-  // Sigma doesn't always push new data after the source refreshes. The "Refresh data"
-  // plugin action re-subscribes, which makes Sigma send the current data.
-  // The source may still be reloading when the action fires, so re-subscribe twice,
-  // then reload the plugin.
-  const [refreshKey, setRefreshKey] = useState(0);
-  const [refreshing, setRefreshing] = useState(false);
-  const refreshTimers = React.useRef<number[]>([]);
-  const handleRefresh = useCallback(() => {
-    refreshTimers.current.forEach((t) => window.clearTimeout(t));
-    setRefreshing(true);
-    refreshTimers.current = [0, 1500].map((ms) =>
-      window.setTimeout(() => setRefreshKey((k) => k + 1), ms),
-    );
-    // Re-subscribing alone doesn't always get fresh data; a full reload does, the same
-    // as scrolling the plugin out of view and back.
-    refreshTimers.current.push(window.setTimeout(() => window.location.reload(), 3000));
-  }, []);
-  React.useEffect(() => () => refreshTimers.current.forEach((t) => window.clearTimeout(t)), []);
-  useActionEffect('refreshData', handleRefresh);
-  // Sigma may invoke the effect by its stored config value rather than the key name,
-  // so register under both and also listen for the raw invoke message.
-  const refreshEffectId = configString(config.refreshData);
-  useActionEffect(refreshEffectId && refreshEffectId !== 'refreshData' ? refreshEffectId : '__unusedRefresh', handleRefresh);
-  React.useEffect(() => {
-    const onMsg = (e: MessageEvent) => {
-      const d = e.data as { type?: string } | null;
-      if (d && d.type === 'wb:plugin:action-effect:invoke') handleRefresh();
-    };
-    window.addEventListener('message', onMsg);
-    return () => window.removeEventListener('message', onMsg);
-  }, [handleRefresh]);
-  const data = useRefreshableElementData(sourceId, refreshKey);
+  const data = useElementData(sourceId);
   const columns = useElementColumns(sourceId);
 
   const nameColId = (config.nameCol as string) || '';
@@ -524,8 +492,6 @@ function App() {
   const ancestors = focusPath ? focusPath.slice(0, -1) : [];
 
   return (
-    <>
-    {refreshing && <div className="refresh-indicator">Refreshing…</div>}
     <ForecastTable
       root={displayRoot}
       ancestors={ancestors}
@@ -537,18 +503,7 @@ function App() {
       onFocus={handleFocus}
       onClearFocus={clearFocus}
     />
-    </>
   );
-}
-
-/** Like useElementData, but re-subscribes whenever refreshKey changes. */
-function useRefreshableElementData(configId: string, refreshKey: number) {
-  const [data, setData] = useState<Record<string, any[]>>({});
-  React.useEffect(() => {
-    if (!configId) return;
-    return client.elements.subscribeToElementData(configId, setData);
-  }, [configId, refreshKey]);
-  return data;
 }
 
 /** Path of nodes from root down to the node with the given id, or null if not found. */
