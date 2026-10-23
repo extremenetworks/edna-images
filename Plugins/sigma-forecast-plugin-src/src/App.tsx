@@ -177,6 +177,18 @@ function App() {
   }, []);
   React.useEffect(() => () => refreshTimers.current.forEach((t) => window.clearTimeout(t)), []);
   useActionEffect('refreshData', handleRefresh);
+  // Sigma may invoke the effect by its stored config value rather than the key name,
+  // so register under both and also listen for the raw invoke message.
+  const refreshEffectId = configString(config.refreshData);
+  useActionEffect(refreshEffectId && refreshEffectId !== 'refreshData' ? refreshEffectId : '__unusedRefresh', handleRefresh);
+  React.useEffect(() => {
+    const onMsg = (e: MessageEvent) => {
+      const d = e.data as { type?: string } | null;
+      if (d && d.type === 'wb:plugin:action-effect:invoke') handleRefresh();
+    };
+    window.addEventListener('message', onMsg);
+    return () => window.removeEventListener('message', onMsg);
+  }, [handleRefresh]);
   const data = useRefreshableElementData(sourceId, refreshKey);
   const columns = useElementColumns(sourceId);
 
