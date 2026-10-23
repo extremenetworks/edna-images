@@ -51,6 +51,7 @@ client.config.configureEditorPanel([
   { name: 'selectedVar2Col', type: 'column', source: 'source', allowMultiple: false, label: 'Selected Variable 2 value (column)' },
   { name: 'rowClickAction', type: 'action-trigger', label: 'On Notes Click' },
   { name: 'refreshData', type: 'action-effect', label: 'Refresh data' },
+  { name: 'refreshControl', type: 'variable', label: 'Reload when this control changes' },
 ]);
 
 /** Config values for actions, variables and text are strings; ignore anything else. */
@@ -177,6 +178,17 @@ function App() {
   }, []);
   React.useEffect(() => () => refreshTimers.current.forEach((t) => window.clearTimeout(t)), []);
   useActionEffect('refreshData', handleRefresh);
+  // Alternative trigger: reload whenever the chosen control's value changes (for example,
+  // an action sequence sets it to the current time after refreshing the source).
+  const refreshControlId = configString(config.refreshControl);
+  const [refreshControlValue] = useVariable(refreshControlId);
+  const lastRefreshValue = React.useRef<string | null>(null);
+  React.useEffect(() => {
+    if (!refreshControlId || refreshControlValue === undefined) return;
+    const current = JSON.stringify(refreshControlValue);
+    if (lastRefreshValue.current !== null && lastRefreshValue.current !== current) handleRefresh();
+    lastRefreshValue.current = current;
+  }, [refreshControlId, refreshControlValue, handleRefresh]);
   // Sigma may invoke the effect by its stored config value rather than the key name,
   // so register under both and also listen for the raw invoke message.
   const refreshEffectId = configString(config.refreshData);
