@@ -54,6 +54,9 @@ client.config.configureEditorPanel([
   { name: 'rowClickAction', type: 'action-trigger', label: 'On Notes Click' },
 ]);
 
+/** Measures stored per week in the source and summed across all of a person's rows. */
+const SUMMED_ACROSS_ROWS = new Set(['closed', 'open']);
+
 /** Config values for actions, variables and text are strings; ignore anything else. */
 function configString(value: unknown): string {
   if (typeof value === 'string') return value;
@@ -316,6 +319,8 @@ function App() {
 
     // First pass: find the best (most recent) row index for each name+role
     const bestRowIndex = new Map<string, number>();
+    // Every row per person, for measures that are summed across rows (weekly funnel)
+    const rowsByKey = new Map<string, number[]>();
 
     for (let i = 0; i < rowCount; i++) {
       const name = names[i] != null ? String(names[i]).trim() : '';
@@ -330,6 +335,7 @@ function App() {
         ? (Array.isArray(hierarchyData[i]) ? JSON.stringify(hierarchyData[i]) : String(hierarchyData[i]))
         : '';
       const dedupeKey = `${name}|||${role}|||${pathKey}`;
+      rowsByKey.set(dedupeKey, [...(rowsByKey.get(dedupeKey) ?? []), i]);
       const existing = bestRowIndex.get(dedupeKey);
 
       if (existing === undefined) {
@@ -347,9 +353,7 @@ function App() {
 
     // Second pass: build rows from the winning indices
     const rows: ForecastRow[] = [];
-    const winningIndices = new Set(bestRowIndex.values());
-
-    for (const i of winningIndices) {
+    for (const [dedupeKey, i] of bestRowIndex) {
       const name = String(names[i]).trim();
       let role = roles ? String(roles[i] ?? '').trim() : '';
 
@@ -371,7 +375,31 @@ function App() {
       for (const mc of allMeasureColumns) {
         if (mc.colId === '__computed__') continue;
         const colData = data[mc.colId];
-        values[mc.key] = colData ? toNum(colData[i]) : null;
+        if (!colData) { values[mc.key] = null; continue; }
+        if (SUMMED_ACROSS_ROWS.has(mc.key)) {
+          // Booked and Open Funnel hold one week's amount per row; the quarter total is
+          // the sum over every week in the source
+          let total: number | null = null;
+          for (const r of rowsByKey.get(dedupeKey) ?? [i]) {
+            const v = toNum(colData[r]);
+            if (v != null) total = (total ?? 0) + v;
+          }
+          values[mc.key] = total;
+        } else {
+          // Forecast values only exist on submission weeks; use the chosen row, else the
+          // person's most recent row that has a value
+          let v = toNum(colData[i]);
+          if (v == null) {
+            let bestDate: string | null = null;
+            for (const r of rowsByKey.get(dedupeKey) ?? []) {
+              const rv = toNum(colData[r]);
+              if (rv == null) continue;
+              const d = dateData && dateData[r] != null ? String(dateData[r]) : '';
+              if (v == null || (bestDate != null && d > bestDate)) { v = rv; bestDate = d; }
+            }
+          }
+          values[mc.key] = v;
+        }
       }
 
       // Compute W:W deltas
