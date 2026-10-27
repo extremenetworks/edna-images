@@ -52,7 +52,12 @@ client.config.configureEditorPanel([
   { name: 'selectedVar3', type: 'variable', label: 'Selected Variable 3' },
   { name: 'selectedVar3Col', type: 'column', source: 'source', allowMultiple: false, label: 'Selected Variable 3 value (column)' },
   { name: 'rowClickAction', type: 'action-trigger', label: 'On Notes Click' },
+  { name: 'numberClickAction', type: 'action-trigger', label: 'On Number Click' },
+  { name: 'monthControl', type: 'variable', label: 'Month Variable (1/2/3 on M1/M2/M3 click)' },
 ]);
+
+/** Month variable value set when an M1/M2/M3 number is clicked. */
+const MONTH_BY_KEY: Record<string, string> = { m1: '1', m2: '2', m3: '3' };
 
 /** Measures stored per week in the source and summed across all of a person's rows. */
 const SUMMED_ACROSS_ROWS = new Set(['closed', 'open']);
@@ -222,6 +227,18 @@ function App() {
     selectedVar2Control, setSelectedVar2, selectedVar2Col,
     selectedVar3Control, setSelectedVar3, selectedVar3Col,
   ]);
+
+  // Number click: sets the same variables as Notes, plus the month variable (1/2/3 for
+  // M1/M2/M3, cleared for other columns), then fires its own action.
+  const numberClickActionConfig = configString(config.numberClickAction);
+  const triggerNumberClick = useActionTrigger(numberClickActionConfig);
+  const monthControl = configString(config.monthControl);
+  const [, setMonth] = useVariable(monthControl);
+  const handleNumberClick = useCallback((node: TreeNode, measureKey: string) => {
+    setPersonVariables(node);
+    if (monthControl) setMonth(MONTH_BY_KEY[measureKey] ?? '');
+    if (numberClickActionConfig) triggerNumberClick();
+  }, [setPersonVariables, monthControl, setMonth, numberClickActionConfig, triggerNumberClick]);
 
   const handleRowClick = useCallback((node: TreeNode) => {
     setPersonVariables(node);
@@ -535,6 +552,7 @@ function App() {
       onToggle={toggleExpand}
       onRowClick={rowClickActionConfig ? handleRowClick : undefined}
       onForecastClick={showForecast ? handleForecastClick : undefined}
+      onNumberClick={numberClickActionConfig || monthControl ? handleNumberClick : undefined}
       onFocus={handleFocus}
       onClearFocus={clearFocus}
     />

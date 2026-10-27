@@ -13,6 +13,7 @@ interface Props {
   onToggle: (nodeId: string) => void;
   onRowClick?: (node: TreeNode) => void;
   onForecastClick?: (node: TreeNode) => void;
+  onNumberClick?: (node: TreeNode, measureKey: string) => void;
   forecastLeft?: number;
   lastFrozen?: 'status' | 'notes' | 'forecast';
   onFocus?: (nodeId: string) => void;
@@ -21,7 +22,7 @@ interface Props {
   onMouseLeave?: () => void;
 }
 
-export function TreeRow({ node, depth, measureColumns, isExpanded, onToggle, onRowClick, onForecastClick, forecastLeft, lastFrozen = 'status', onFocus, isHovered, onMouseEnter, onMouseLeave }: Props) {
+export function TreeRow({ node, depth, measureColumns, isExpanded, onToggle, onRowClick, onForecastClick, onNumberClick, forecastLeft, lastFrozen = 'status', onFocus, isHovered, onMouseEnter, onMouseLeave }: Props) {
   const hasChildren = node.children.length > 0;
   const isAggregate = !node.isLeaf;
   const indentPx = depth * 24;
@@ -110,7 +111,12 @@ export function TreeRow({ node, depth, measureColumns, isExpanded, onToggle, onR
         </td>
       )}
       {measureColumns.map((mc) => (
-        <td key={mc.key} className="col-measure">
+        <td
+          key={mc.key}
+          className={`col-measure${onNumberClick && !isPlaceholder ? ' number-clickable' : ''}`}
+          onClick={onNumberClick && !isPlaceholder ? () => onNumberClick(node, mc.key) : undefined}
+          title={onNumberClick && !isPlaceholder ? `${mc.label}: ${node.name}` : undefined}
+        >
           <DualValueCell
             measureKey={mc.key}
             entered={FUNNEL_KEYS.has(mc.key) && isAggregate

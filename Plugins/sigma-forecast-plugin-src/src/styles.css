@@ -718,3 +718,11 @@ body {
   display: block;
   max-width: 100%;
 }
+
+/* Numbers that fire the "On Number Click" action */
+.number-clickable {
+  cursor: pointer;
+}
+.forecast-table td.number-clickable:hover {
+  background: rgba(51, 51, 51, 0.06);
+}

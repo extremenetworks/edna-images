@@ -13,6 +13,7 @@ interface Props {
   onToggle: (nodeId: string) => void;
   onRowClick?: (node: TreeNode) => void;
   onForecastClick?: (node: TreeNode) => void;
+  onNumberClick?: (node: TreeNode, measureKey: string) => void;
   onFocus: (nodeId: string) => void;
   onClearFocus: () => void;
 }
@@ -21,7 +22,7 @@ interface Props {
 const NOTES_LEFT = 316;
 const NOTES_WIDTH = 56;
 
-export function ForecastTable({ root, ancestors, measureColumns, expandedIds, onToggle, onRowClick, onForecastClick, onFocus, onClearFocus }: Props) {
+export function ForecastTable({ root, ancestors, measureColumns, expandedIds, onToggle, onRowClick, onForecastClick, onNumberClick, onFocus, onClearFocus }: Props) {
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < MOBILE_BREAKPOINT);
 
   useEffect(() => {
@@ -56,6 +57,7 @@ export function ForecastTable({ root, ancestors, measureColumns, expandedIds, on
               onFocus={item.depth > 0 ? onFocus : undefined}
               onRowClick={onRowClick}
               onForecastClick={onForecastClick}
+              onNumberClick={onNumberClick}
             />
           ))}
         </div>
@@ -94,6 +96,7 @@ export function ForecastTable({ root, ancestors, measureColumns, expandedIds, on
                 onToggle={onToggle}
                 onRowClick={onRowClick}
                 onForecastClick={onForecastClick}
+                onNumberClick={onNumberClick}
                 forecastLeft={forecastLeft}
                 lastFrozen={lastFrozen}
                 onFocus={item.depth > 0 ? onFocus : undefined}

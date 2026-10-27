@@ -12,9 +12,10 @@ interface Props {
   onFocus?: (nodeId: string) => void;
   onRowClick?: (node: TreeNode) => void;
   onForecastClick?: (node: TreeNode) => void;
+  onNumberClick?: (node: TreeNode, measureKey: string) => void;
 }
 
-export function MobileCard({ node, depth, measureColumns, isExpanded, onToggle, onFocus, onRowClick, onForecastClick }: Props) {
+export function MobileCard({ node, depth, measureColumns, isExpanded, onToggle, onFocus, onRowClick, onForecastClick, onNumberClick }: Props) {
   const hasChildren = node.children.length > 0;
   const isAggregate = !node.isLeaf;
   const indentPx = depth * 16;
@@ -104,7 +105,11 @@ export function MobileCard({ node, depth, measureColumns, isExpanded, onToggle, 
           const showDelta = mc.key === 'mlv' && mlvDelta !== null && mlvDelta !== 0;
 
           return (
-            <div key={mc.key} className="mobile-metric">
+            <div
+              key={mc.key}
+              className={`mobile-metric${onNumberClick && !node.id.startsWith('placeholder-') ? ' number-clickable' : ''}`}
+              onClick={onNumberClick && !node.id.startsWith('placeholder-') ? () => onNumberClick(node, mc.key) : undefined}
+            >
               <span className="mobile-metric-label">{mc.label}</span>
               <div className="mobile-metric-values">
                 <span className={`mobile-metric-primary ${isWoW ? getWoWClass(entered) : ''}`}>
