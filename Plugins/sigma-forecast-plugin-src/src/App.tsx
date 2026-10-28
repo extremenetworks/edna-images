@@ -45,6 +45,8 @@ client.config.configureEditorPanel([
   { name: 'm2Label', type: 'text', placeholder: 'M2', label: 'M2 label' },
   { name: 'm3Label', type: 'text', placeholder: 'M3', label: 'M3 label' },
   { name: 'selectedUser', type: 'variable', label: 'Selected Username Variable' },
+  { name: 'selectedUserId', type: 'variable', label: 'Selected User ID Variable' },
+  { name: 'userIdCol', type: 'column', source: 'source', allowMultiple: false, label: 'User ID (column)' },
   { name: 'selectedVar1', type: 'variable', label: 'Selected Variable 1' },
   { name: 'selectedVar1Col', type: 'column', source: 'source', allowMultiple: false, label: 'Selected Variable 1 value (column)' },
   { name: 'selectedVar2', type: 'variable', label: 'Selected Variable 2' },
@@ -189,6 +191,9 @@ function App() {
 
   // Extra variables work like the username: on any Notes or Forecast click, each is set
   // to the clicked person's value in its mapped column.
+  const selectedUserIdControl = configString(config.selectedUserId);
+  const [, setSelectedUserId] = useVariable(selectedUserIdControl);
+  const userIdCol = configString(config.userIdCol);
   const selectedVar1Control = configString(config.selectedVar1);
   const [, setSelectedVar1] = useVariable(selectedVar1Control);
   const selectedVar1Col = configString(config.selectedVar1Col);
@@ -218,11 +223,13 @@ function App() {
       }
       return '';
     };
+    if (selectedUserIdControl) setSelectedUserId(valueFrom(userIdCol));
     if (selectedVar1Control) setSelectedVar1(valueFrom(selectedVar1Col));
     if (selectedVar2Control) setSelectedVar2(valueFrom(selectedVar2Col));
     if (selectedVar3Control) setSelectedVar3(valueFrom(selectedVar3Col));
   }, [
     selectedUserControl, setSelectedUser, data, nameColId,
+    selectedUserIdControl, setSelectedUserId, userIdCol,
     selectedVar1Control, setSelectedVar1, selectedVar1Col,
     selectedVar2Control, setSelectedVar2, selectedVar2Col,
     selectedVar3Control, setSelectedVar3, selectedVar3Col,
