@@ -1,6 +1,6 @@
 import React from 'react';
 import type { TreeNode, MeasureColumn } from '../types';
-import { formatCompact, formatWoW } from '../lib/format';
+import { formatCompact, formatWoW, coverageParts } from '../lib/format';
 import { NoteButton, ForecastButton } from './TreeRow';
 
 interface Props {
@@ -136,15 +136,14 @@ export function MobileCard({ node, depth, measureColumns, isExpanded, onToggle, 
 }
 
 function MobileCoverageBar({ closed, open, mlv }: { closed: number; open: number; mlv: number }) {
-  const closedPct = Math.min(Math.max((closed / mlv) * 100, 0), 100);
-  const openPct = Math.min(Math.max((open / mlv) * 100, 0), 100 - closedPct);
-  const totalCoverage = Math.round(closedPct + openPct);
+  const { closedPct, openPct, totalPct, closedWidth, openWidth } = coverageParts(closed, open, mlv);
+  const totalCoverage = Math.round(totalPct);
 
   return (
     <div className="mobile-coverage">
       <div className="mobile-coverage-bar">
-        {closedPct > 0 && <div className="bar-segment bar-booked" style={{ width: `${closedPct}%` }} />}
-        {openPct > 0 && <div className="bar-segment bar-open" style={{ width: `${openPct}%` }} />}
+        {closedWidth > 0 && <div className="bar-segment bar-booked" style={{ width: `${closedWidth}%` }} />}
+        {openWidth > 0 && <div className="bar-segment bar-open" style={{ width: `${openWidth}%` }} />}
       </div>
       <div className="mobile-coverage-labels">
         <span className="coverage-label"><span className="dot-booked" /> {Math.round(closedPct)}% booked</span>

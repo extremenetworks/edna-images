@@ -1,5 +1,5 @@
 import React from 'react';
-import { formatCompact, formatWoW } from '../lib/format';
+import { formatCompact, formatWoW, coverageParts } from '../lib/format';
 
 /** Booked + open funnel against a forecast value, drawn as a stacked coverage bar. */
 export interface CoverageData {
@@ -70,20 +70,19 @@ function WoWBadge({ delta }: { delta: number }) {
 function CoverageBar({ closed, open, mlv, label }: { closed: number; open: number; mlv: number; label: string }) {
   if (mlv <= 0) return null;
 
-  const closedPct = Math.min(Math.max((closed / mlv) * 100, 0), 100);
-  const openPct = Math.min(Math.max((open / mlv) * 100, 0), 100 - closedPct);
-  const totalCoverage = Math.round(closedPct + openPct);
+  const { closedPct, openPct, totalPct, closedWidth, openWidth } = coverageParts(closed, open, mlv);
+  const totalCoverage = Math.round(totalPct);
 
   const tooltip = `Booked: ${formatCompact(closed)} (${Math.round(closedPct)}%)\nOpen: ${formatCompact(open)} (${Math.round(openPct)}%)\n${label}: ${formatCompact(mlv)}\nCoverage: ${totalCoverage}%`;
 
   return (
     <div className="stacked-bar-container" title={tooltip}>
       <div className="stacked-bar">
-        {closedPct > 0 && (
-          <div className="bar-segment bar-booked" style={{ width: `${closedPct}%` }} />
+        {closedWidth > 0 && (
+          <div className="bar-segment bar-booked" style={{ width: `${closedWidth}%` }} />
         )}
-        {openPct > 0 && (
-          <div className="bar-segment bar-open" style={{ width: `${openPct}%` }} />
+        {openWidth > 0 && (
+          <div className="bar-segment bar-open" style={{ width: `${openWidth}%` }} />
         )}
       </div>
       <span className="progress-label">{totalCoverage}%</span>

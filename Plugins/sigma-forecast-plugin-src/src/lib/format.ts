@@ -46,3 +46,22 @@ export function formatWoW(value: number | null | undefined): string {
 
   return `${sign}$${Math.round(value).toLocaleString()}`;
 }
+
+/**
+ * Coverage of a forecast by booked + open funnel. The percentages are the true values
+ * (they can exceed 100%); the widths are scaled so the bar never overflows, splitting a
+ * full bar in proportion when coverage is over 100%.
+ */
+export function coverageParts(closed: number, open: number, total: number) {
+  const closedPct = Math.max((closed / total) * 100, 0);
+  const openPct = Math.max((open / total) * 100, 0);
+  const totalPct = closedPct + openPct;
+  const scale = totalPct > 100 ? 100 / totalPct : 1;
+  return {
+    closedPct,
+    openPct,
+    totalPct,
+    closedWidth: closedPct * scale,
+    openWidth: openPct * scale,
+  };
+}
