@@ -19,6 +19,7 @@ client.config.configureEditorPanel([
   { name: 'roleCol', type: 'column', source: 'source', allowMultiple: false, label: 'Role (fallback hierarchy)' },
   { name: 'hierarchyCol', type: 'column', source: 'source', allowMultiple: false, label: 'Hierarchy Path (JSON array, optional)' },
   { name: 'dateCol', type: 'column', source: 'source', allowMultiple: false, label: 'Created Date (for latest entry)' },
+  { name: 'latestCol', type: 'column', source: 'source', allowMultiple: false, label: 'Latest Submission flag (optional, true = use this row)' },
   { name: 'closedCol', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['number', 'integer'], label: 'Booked (Closed)' },
   { name: 'openCol', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['number', 'integer'], label: 'Open Funnel' },
   { name: 'lowCol', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['number', 'integer'], label: 'Low' },
@@ -30,7 +31,16 @@ client.config.configureEditorPanel([
   { name: 'm1Col', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['number', 'integer'], label: 'M1' },
   { name: 'm2Col', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['number', 'integer'], label: 'M2' },
   { name: 'm3Col', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['number', 'integer'], label: 'M3' },
-  { name: 'submittedCol', type: 'column', source: 'source', allowMultiple: false, label: 'Submitted This Week (optional)' },
+  { name: 'prevM1Col', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['number', 'integer'], label: 'Prev Wk M1 (optional)' },
+  { name: 'prevM2Col', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['number', 'integer'], label: 'Prev Wk M2 (optional)' },
+  { name: 'prevM3Col', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['number', 'integer'], label: 'Prev Wk M3 (optional)' },
+  { name: 'closedM1Col', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['number', 'integer'], label: 'M1 Booked (optional, for coverage)' },
+  { name: 'openM1Col', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['number', 'integer'], label: 'M1 Open Funnel (optional, for coverage)' },
+  { name: 'closedM2Col', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['number', 'integer'], label: 'M2 Booked (optional, for coverage)' },
+  { name: 'openM2Col', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['number', 'integer'], label: 'M2 Open Funnel (optional, for coverage)' },
+  { name: 'closedM3Col', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['number', 'integer'], label: 'M3 Booked (optional, for coverage)' },
+  { name: 'openM3Col', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['number', 'integer'], label: 'M3 Open Funnel (optional, for coverage)' },
+  { name: 'submittedCol', type: 'column', source: 'source', allowMultiple: false, label: 'Status (true = green, otherwise red)' },
   { name: 'channelCol', type: 'column', source: 'source', allowMultiple: false, label: 'Channel (MSP/Non-MSP, optional)' },
   { name: 'noteCol', type: 'column', source: 'source', allowMultiple: false, label: 'Note (optional)' },
   { name: 'fcShow', type: 'toggle', label: 'Show Forecast button', defaultValue: true },
@@ -75,13 +85,15 @@ interface DebugClick {
   rowIndex: number | null;
   action: string | null;
   sent: DebugSet[];
+  /** The clicked person's own values, including hidden prev-week and monthly funnel ones */
+  values?: Record<string, number>;
 }
 
 /** Month variable value set when an M1/M2/M3 number is clicked. */
 const MONTH_BY_KEY: Record<string, string> = { m1: '1', m2: '2', m3: '3' };
 
 /** Measures stored per week in the source and summed across all of a person's rows. */
-const SUMMED_ACROSS_ROWS = new Set(['closed', 'open']);
+const SUMMED_ACROSS_ROWS = new Set(['closed', 'open', 'closedM1', 'closedM2', 'closedM3', 'openM1', 'openM2', 'openM3']);
 
 /** Config values for actions, variables and text are strings; ignore anything else. */
 function configString(value: unknown): string {
@@ -195,6 +207,7 @@ function App() {
   const roleColId = (config.roleCol as string) || '';
   const hierarchyColId = (config.hierarchyCol as string) || '';
   const dateColId = (config.dateCol as string) || '';
+  const latestColId = configString(config.latestCol);
   const submittedColId = (config.submittedCol as string) || '';
   const channelColId = (config.channelCol as string) || '';
 
@@ -284,13 +297,13 @@ function App() {
       sent.push({ label: 'Month', control: monthControl, column: null, columnInData: null, value: month, error });
     }
     if (numberClickActionConfig) triggerNumberClick();
-    recordClick({ kind: `Number (${measureKey})`, person: node.name, rowIndex: node.rowIndex, action: numberClickActionConfig || null, sent });
+    recordClick({ kind: `Number (${measureKey})`, person: node.name, rowIndex: node.rowIndex, values: node.entered, action: numberClickActionConfig || null, sent });
   }, [setPersonVariables, monthControl, setMonth, numberClickActionConfig, triggerNumberClick, recordClick]);
 
   const handleRowClick = useCallback((node: TreeNode) => {
     const sent = setPersonVariables(node);
     if (rowClickActionConfig) triggerRowClick();
-    recordClick({ kind: 'Notes', person: node.name, rowIndex: node.rowIndex, action: rowClickActionConfig || null, sent });
+    recordClick({ kind: 'Notes', person: node.name, rowIndex: node.rowIndex, values: node.entered, action: rowClickActionConfig || null, sent });
   }, [setPersonVariables, rowClickActionConfig, triggerRowClick, recordClick]);
 
   // Forecast button: sets the same variables as Notes, then fires its own action.
@@ -310,7 +323,7 @@ function App() {
   const handleForecastClick = useCallback((node: TreeNode) => {
     const sent = setPersonVariables(node);
     if (forecastActionConfig) triggerForecast();
-    recordClick({ kind: 'Forecast', person: node.name, rowIndex: node.rowIndex, action: forecastActionConfig || null, sent });
+    recordClick({ kind: 'Forecast', person: node.name, rowIndex: node.rowIndex, values: node.entered, action: forecastActionConfig || null, sent });
   }, [setPersonVariables, forecastActionConfig, triggerForecast, recordClick]);
 
   // Measure column definitions
@@ -327,6 +340,15 @@ function App() {
       { key: 'm1', configKey: 'm1Col', label: 'M1' },
       { key: 'm2', configKey: 'm2Col', label: 'M2' },
       { key: 'm3', configKey: 'm3Col', label: 'M3' },
+      { key: 'prevM1', configKey: 'prevM1Col', label: 'Prev Wk M1' },
+      { key: 'closedM1', configKey: 'closedM1Col', label: 'M1 Booked' },
+      { key: 'openM1', configKey: 'openM1Col', label: 'M1 Open Funnel' },
+      { key: 'prevM2', configKey: 'prevM2Col', label: 'Prev Wk M2' },
+      { key: 'closedM2', configKey: 'closedM2Col', label: 'M2 Booked' },
+      { key: 'openM2', configKey: 'openM2Col', label: 'M2 Open Funnel' },
+      { key: 'prevM3', configKey: 'prevM3Col', label: 'Prev Wk M3' },
+      { key: 'closedM3', configKey: 'closedM3Col', label: 'M3 Booked' },
+      { key: 'openM3', configKey: 'openM3Col', label: 'M3 Open Funnel' },
     ];
     return defs;
   }, []);
@@ -359,8 +381,14 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [config, measureDefs, labelKey]);
 
-  // Visible columns exclude prev-week columns (their deltas show as badges on Low/MLV/High)
-  const HIDDEN_KEYS = new Set(['prevMlv', 'prevLow', 'prevHigh']);
+  // Visible columns exclude prev-week columns (their deltas show as badges) and the monthly
+  // funnel columns (they only feed the M1-M3 coverage bars)
+  const HIDDEN_KEYS = new Set([
+    'prevMlv', 'prevLow', 'prevHigh',
+    'prevM1', 'prevM2', 'prevM3',
+    'closedM1', 'closedM2', 'closedM3',
+    'openM1', 'openM2', 'openM3',
+  ]);
   const measureColumns: MeasureColumn[] = useMemo(
     () => allMeasureColumns.filter((mc) => !HIDDEN_KEYS.has(mc.key)),
     [allMeasureColumns],
@@ -382,6 +410,7 @@ function App() {
     // Deduplicate: keep only the most recent entry per name+role
     // using the date column to determine which is latest
     const dateData = dateColId ? data[dateColId] : null;
+    const latestData = latestColId ? data[latestColId] : null;
 
     // First pass: find the best (most recent) row index for each name+role
     const bestRowIndex = new Map<string, number>();
@@ -410,11 +439,24 @@ function App() {
         // Compare dates: keep the row with the later date
         const existingDate = dateData[existing];
         const currentDate = dateData[i];
-        if (currentDate != null && (existingDate == null || String(currentDate) > String(existingDate))) {
+        if (currentDate != null && (existingDate == null || isLater(currentDate, existingDate))) {
           bestRowIndex.set(dedupeKey, i);
         }
       }
       // If no date column, keep the first occurrence
+    }
+
+    // People with a true status on any of their rows
+    const trueNames = new Set<string>();
+    const statusData = submittedColId ? data[submittedColId] : null;
+    if (statusData) {
+      for (let r = 0; r < rowCount; r++) {
+        const raw = statusData[r];
+        if (isTrue(raw)) {
+          const n = names[r] != null ? String(names[r]).trim() : '';
+          if (n) trueNames.add(n);
+        }
+      }
     }
 
     // Second pass: build rows from the winning indices
@@ -437,6 +479,14 @@ function App() {
         if (hierarchyPath) role = ''; // clear role since it was actually a hierarchy path
       }
 
+      // Row flagged as the person's latest submission, if a flag column is mapped
+      let forecastRow: number | null = null;
+      if (latestData) {
+        for (const r of rowsByKey.get(dedupeKey) ?? [i]) {
+          if (isTrue(latestData[r])) { forecastRow = r; break; }
+        }
+      }
+
       const values: Record<string, number | null> = {};
       for (const mc of allMeasureColumns) {
         if (mc.colId === '__computed__') continue;
@@ -452,16 +502,17 @@ function App() {
           }
           values[mc.key] = total;
         } else {
-          // Forecast values only exist on submission weeks; use the chosen row, else the
-          // person's most recent row that has a value
-          let v = toNum(colData[i]);
+          // Forecast values only exist on submission weeks; use the flagged latest row or the
+          // chosen row, else the person's most recent row that has a value
+          // With a latest-submission flag mapped, that row wins
+          let v = forecastRow != null ? toNum(colData[forecastRow]) : toNum(colData[i]);
           if (v == null) {
-            let bestDate: string | null = null;
+            let bestDate: unknown = null;
             for (const r of rowsByKey.get(dedupeKey) ?? []) {
               const rv = toNum(colData[r]);
               if (rv == null) continue;
-              const d = dateData && dateData[r] != null ? String(dateData[r]) : '';
-              if (v == null || (bestDate != null && d > bestDate)) { v = rv; bestDate = d; }
+              const d = dateData ? dateData[r] : null;
+              if (v == null || (d != null && (bestDate == null || isLater(d, bestDate)))) { v = rv; bestDate = d; }
             }
           }
           values[mc.key] = v;
@@ -472,19 +523,15 @@ function App() {
       values.mlvWoW = (values.mlv != null && values.prevMlv != null) ? values.mlv - values.prevMlv : null;
       values.lowWoW = (values.low != null && values.prevLow != null) ? values.low - values.prevLow : null;
       values.highWoW = (values.high != null && values.prevHigh != null) ? values.high - values.prevHigh : null;
-
-      // Read submitted boolean
-      let submitted: boolean | null = null;
-      if (submittedColId) {
-        const subData = data[submittedColId];
-        if (subData) {
-          const raw = subData[i];
-          if (typeof raw === 'boolean') submitted = raw;
-          else if (raw === 'true' || raw === true || raw === 1) submitted = true;
-          else if (raw === 'false' || raw === false || raw === 0) submitted = false;
-          else if (raw != null) submitted = Boolean(raw);
-        }
+      for (const m of ['m1', 'm2', 'm3']) {
+        const cur = values[m];
+        const prev = values[`prev${m.toUpperCase()}`];
+        values[`${m}WoW`] = cur != null && prev != null ? cur - prev : null;
       }
+
+      // Status: green when the mapped column is true on any row for this person (only
+      // the current week's row is ever true upstream)
+      const submitted = submittedColId ? trueNames.has(name) : null;
 
       // Read channel
       let channel: string | null = null;
@@ -534,7 +581,7 @@ function App() {
     computeRollups(root, measureKeys);
 
     return root;
-  }, [data, nameColId, roleColId, allMeasureColumns]);
+  }, [data, nameColId, roleColId, hierarchyColId, dateColId, latestColId, submittedColId, channelColId, allMeasureColumns]);
 
   // Expand/collapse state
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
@@ -606,17 +653,30 @@ function App() {
       onFocus={handleFocus}
       onClearFocus={clearFocus}
     />
-    {showDebug && <DebugPanel config={config} lastClick={lastClick} />}
+    {showDebug && <DebugPanel config={config} lastClick={lastClick} statusCol={submittedColId} statusData={submittedColId ? data[submittedColId] : undefined} />}
     </>
   );
 }
 
 /** Settings and last-click details, shown when "Show debug panel" is on. */
-function DebugPanel({ config, lastClick }: { config: Record<string, unknown>; lastClick: DebugClick | null }) {
+function DebugPanel({ config, lastClick, statusCol, statusData }: {
+  config: Record<string, unknown>;
+  lastClick: DebugClick | null;
+  statusCol: string;
+  statusData: unknown[] | undefined;
+}) {
+  // Distinct raw status values with their types, to check what counts as true
+  const statusValues = statusData
+    ? Array.from(new Set(statusData.map((v) => `${JSON.stringify(v)} (${v === null ? 'null' : typeof v})`))).slice(0, 8)
+    : [];
   return (
     <div className="debug-panel">
       <div className="debug-title">Debug</div>
       <div>Saved settings: {Object.keys(config).sort().join(', ')}</div>
+      <div>
+        Status column: {statusCol || 'not mapped'}
+        {statusCol && (statusData ? ` (loaded, ${statusData.length} rows) values: ${statusValues.join(', ')}` : ' (NOT loaded - reopen the workbook)')}
+      </div>
       {!lastClick ? (
         <div>Click Notes, Forecast or a number to see what is sent.</div>
       ) : (
@@ -625,6 +685,11 @@ function DebugPanel({ config, lastClick }: { config: Record<string, unknown>; la
             Last click: {lastClick.kind} on {lastClick.person} (row {lastClick.rowIndex ?? 'none'}), action:{' '}
             {lastClick.action ?? 'not set'}
           </div>
+          {lastClick.values && (
+            <div>
+              Values: {Object.entries(lastClick.values).map(([k, v]) => `${k}=${Math.round(v)}`).join(', ') || 'none'}
+            </div>
+          )}
           {lastClick.sent.length === 0 && <div>No controls set (none configured).</div>}
           {lastClick.sent.map((d) => (
             <div key={d.label}>
@@ -637,6 +702,21 @@ function DebugPanel({ config, lastClick }: { config: Record<string, unknown>; la
       )}
     </div>
   );
+}
+
+/** True for boolean true, 1 or the text "true". */
+function isTrue(raw: unknown): boolean {
+  return raw === true || raw === 1 || (typeof raw === 'string' && raw.trim().toLowerCase() === 'true');
+}
+
+/** Whether date a is later than b. Sigma sends dates as epoch numbers, so compare those
+ * numerically; text comparison would rank "999..." above "1000...". */
+function isLater(a: unknown, b: unknown): boolean {
+  if (typeof a === 'number' && typeof b === 'number') return a > b;
+  const ta = Date.parse(String(a));
+  const tb = Date.parse(String(b));
+  if (!isNaN(ta) && !isNaN(tb)) return ta > tb;
+  return String(a) > String(b);
 }
 
 /** Path of nodes from root down to the node with the given id, or null if not found. */

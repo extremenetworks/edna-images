@@ -1,40 +1,33 @@
 import React from 'react';
 import { formatCompact, formatWoW } from '../lib/format';
 
+/** Booked + open funnel against a forecast value, drawn as a stacked coverage bar. */
+export interface CoverageData {
+  closed: number;
+  open: number;
+  total: number;
+  /** Name of the forecast value in the tooltip, e.g. MLV or M1 */
+  label: string;
+}
+
 interface Props {
-  measureKey: string;
   entered: number | null;
   rolledUp: number | null;
   isAggregate: boolean;
   isWoW?: boolean;
-  closed: number | null;
-  closedRolledUp: number | null;
-  openFunnel: number | null;
-  openRolledUp: number | null;
-  mlv: number | null;
-  mlvDelta: number | null;
-  lowDelta: number | null;
-  highDelta: number | null;
+  /** Change since the previous week, shown as an arrow */
+  delta: number | null;
+  coverage: CoverageData | null;
 }
 
-export function DualValueCell({ measureKey, entered, rolledUp, isAggregate, isWoW, closed, closedRolledUp, openFunnel, openRolledUp, mlv, mlvDelta, lowDelta, highDelta }: Props) {
+export function DualValueCell({ entered, rolledUp, isAggregate, isWoW, delta, coverage }: Props) {
   if (entered === null && rolledUp === null) {
     return <span className="value-dash">-</span>;
   }
 
   const fmt = isWoW ? formatWoW : formatCompact;
-  const showBar = measureKey === 'mlv' && mlv != null && mlv > 0;
-
-  // Determine delta for this measure
-  let delta: number | null = null;
-  if (measureKey === 'mlv') delta = mlvDelta;
-  else if (measureKey === 'low') delta = lowDelta;
-  else if (measureKey === 'high') delta = highDelta;
   const showDelta = delta !== null && delta !== 0;
-
-  const barClosed = isAggregate ? (closedRolledUp ?? closed ?? 0) : (closed ?? 0);
-  const barOpen = isAggregate ? (openRolledUp ?? openFunnel ?? 0) : (openFunnel ?? 0);
-  const barTotal = isAggregate ? (entered ?? mlv!) : mlv!;
+  const showBar = coverage !== null && coverage.total > 0;
 
   if (!isAggregate || rolledUp === null) {
     return (
@@ -43,7 +36,7 @@ export function DualValueCell({ measureKey, entered, rolledUp, isAggregate, isWo
           {fmt(entered)}
           {showDelta && <WoWBadge delta={delta!} />}
         </span>
-        {showBar && <CoverageBar closed={barClosed} open={barOpen} mlv={barTotal} />}
+        {showBar && <CoverageBar closed={coverage!.closed} open={coverage!.open} mlv={coverage!.total} label={coverage!.label} />}
       </div>
     );
   }
@@ -57,7 +50,7 @@ export function DualValueCell({ measureKey, entered, rolledUp, isAggregate, isWo
       <span className="value-rollup">
         {fmt(rolledUp)}
       </span>
-      {showBar && <CoverageBar closed={barClosed} open={barOpen} mlv={barTotal} />}
+      {showBar && <CoverageBar closed={coverage!.closed} open={coverage!.open} mlv={coverage!.total} label={coverage!.label} />}
     </div>
   );
 }
@@ -74,14 +67,14 @@ function WoWBadge({ delta }: { delta: number }) {
   );
 }
 
-function CoverageBar({ closed, open, mlv }: { closed: number; open: number; mlv: number }) {
+function CoverageBar({ closed, open, mlv, label }: { closed: number; open: number; mlv: number; label: string }) {
   if (mlv <= 0) return null;
 
   const closedPct = Math.min(Math.max((closed / mlv) * 100, 0), 100);
   const openPct = Math.min(Math.max((open / mlv) * 100, 0), 100 - closedPct);
   const totalCoverage = Math.round(closedPct + openPct);
 
-  const tooltip = `Booked: ${formatCompact(closed)} (${Math.round(closedPct)}%)\nOpen: ${formatCompact(open)} (${Math.round(openPct)}%)\nMLV: ${formatCompact(mlv)}\nCoverage: ${totalCoverage}%`;
+  const tooltip = `Booked: ${formatCompact(closed)} (${Math.round(closedPct)}%)\nOpen: ${formatCompact(open)} (${Math.round(openPct)}%)\n${label}: ${formatCompact(mlv)}\nCoverage: ${totalCoverage}%`;
 
   return (
     <div className="stacked-bar-container" title={tooltip}>

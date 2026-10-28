@@ -29,9 +29,8 @@ export function MobileCard({ node, depth, measureColumns, isExpanded, onToggle, 
     roleDisplay = node.parsed.level || node.role;
   }
 
-  const submitted = node.submitted !== null
-    ? node.submitted
-    : Object.values(node.entered).some((v) => v != null && v !== 0);
+  // Green only when the upstream status column is true
+  const submitted = node.submitted === true;
 
   // Bar data
   const mlv = node.entered.mlv ?? null;
@@ -101,8 +100,11 @@ export function MobileCard({ node, depth, measureColumns, isExpanded, onToggle, 
           const isWoW = mc.key === 'mlvWoW';
           const fmt = isWoW ? formatWoW : formatCompact;
 
-          const mlvDelta = node.entered.mlvWoW ?? null;
-          const showDelta = mc.key === 'mlv' && mlvDelta !== null && mlvDelta !== 0;
+          // Change since last week for Low/MLV/High/M1-M3
+          const mlvDelta = ['low', 'mlv', 'high', 'm1', 'm2', 'm3'].includes(mc.key)
+            ? (node.entered[`${mc.key}WoW`] ?? null)
+            : null;
+          const showDelta = mlvDelta !== null && mlvDelta !== 0;
 
           return (
             <div

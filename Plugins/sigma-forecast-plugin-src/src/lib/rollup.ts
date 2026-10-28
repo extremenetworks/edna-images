@@ -1,6 +1,7 @@
 import type { TreeNode } from '../types';
 
-const FUNNEL_KEYS = new Set(['closed', 'open']);
+// Funnel keys roll up as own + subtree; includes the monthly funnel used by M1-M3 coverage
+const FUNNEL_KEYS = new Set(['closed', 'open', 'closedM1', 'closedM2', 'closedM3', 'openM1', 'openM2', 'openM3']);
 
 export function computeRollups(node: TreeNode, measureKeys: string[]): void {
   for (const child of node.children) {

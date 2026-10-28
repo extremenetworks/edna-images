@@ -1,9 +1,20 @@
 import React from 'react';
 import type { TreeNode, MeasureColumn } from '../types';
 import { DualValueCell } from './DualValueCell';
+import type { CoverageData } from './DualValueCell';
 
 // Funnel measures are pure sums of the subtree; show the sum as the primary value
 const FUNNEL_KEYS = new Set(['closed', 'open']);
+
+// Measures that show a change-since-last-week arrow (value minus its Prev Wk column)
+const DELTA_KEYS = new Set(['low', 'mlv', 'high', 'm1', 'm2', 'm3']);
+
+// Monthly funnel keys behind each month's coverage bar
+const MONTH_FUNNEL: Record<string, { closed: string; open: string }> = {
+  m1: { closed: 'closedM1', open: 'openM1' },
+  m2: { closed: 'closedM2', open: 'openM2' },
+  m3: { closed: 'closedM3', open: 'openM3' },
+};
 
 interface Props {
   node: TreeNode;
@@ -29,9 +40,8 @@ export function TreeRow({ node, depth, measureColumns, isExpanded, onToggle, onR
   // Placeholder ancestors have no data row (and so no notes) in the source
   const isPlaceholder = node.id.startsWith('placeholder-');
 
-  const submitted = node.submitted !== null
-    ? node.submitted
-    : Object.values(node.entered).some((v) => v != null && v !== 0);
+  // Green only when the upstream status column is true
+  const submitted = node.submitted === true;
 
   // Build role display: use hierarchy path region if available, otherwise parse from role
   let roleDisplay: string;
@@ -46,14 +56,22 @@ export function TreeRow({ node, depth, measureColumns, isExpanded, onToggle, onR
     roleDisplay = node.parsed.level || node.role;
   }
 
-  const closed = node.entered.closed ?? null;
-  const closedRolledUp = isAggregate ? (node.rolledUp.closed ?? null) : null;
-  const openFunnel = node.entered.open ?? null;
-  const openRolledUp = isAggregate ? (node.rolledUp.open ?? null) : null;
-  const mlv = node.entered.mlv ?? null;
-  const mlvDelta = node.entered.mlvWoW ?? null;
-  const lowDelta = node.entered.lowWoW ?? null;
-  const highDelta = node.entered.highWoW ?? null;
+  // Funnel value for a key: the subtree total on aggregate rows, the person's own otherwise
+  const funnel = (key: string) => (isAggregate ? (node.rolledUp[key] ?? node.entered[key]) : node.entered[key]) ?? 0;
+
+  // Coverage bar (booked + open against the forecast) for MLV and, when the monthly funnel
+  // is mapped, M1-M3
+  const coverageFor = (key: string, label: string): CoverageData | null => {
+    const total = node.entered[key] ?? null;
+    if (total == null || total <= 0) return null;
+    if (key === 'mlv') return { closed: funnel('closed'), open: funnel('open'), total, label };
+    const month = MONTH_FUNNEL[key];
+    // Only when at least one monthly funnel column is mapped for this month
+    if (!month) return null;
+    const has = (k: string) => k in node.entered || k in node.rolledUp;
+    if (!has(month.closed) && !has(month.open)) return null;
+    return { closed: funnel(month.closed), open: funnel(month.open), total, label };
+  };
 
   const rowCls = `tree-row ${isAggregate ? 'aggregate-row' : 'leaf-row'} depth-${Math.min(depth, 4)}${isHovered ? ' row-hovered' : ''}`;
 
@@ -118,21 +136,14 @@ export function TreeRow({ node, depth, measureColumns, isExpanded, onToggle, onR
           title={onNumberClick && !isPlaceholder ? `${mc.label}: ${node.name}` : undefined}
         >
           <DualValueCell
-            measureKey={mc.key}
             entered={FUNNEL_KEYS.has(mc.key) && isAggregate
               ? (node.rolledUp[mc.key] ?? null)
               : (node.entered[mc.key] ?? null)}
             rolledUp={isAggregate && !FUNNEL_KEYS.has(mc.key) ? (node.rolledUp[mc.key] ?? null) : null}
             isAggregate={isAggregate}
             isWoW={mc.key === 'mlvWoW'}
-            closed={closed}
-            closedRolledUp={closedRolledUp}
-            openFunnel={openFunnel}
-            openRolledUp={openRolledUp}
-            mlv={mlv}
-            mlvDelta={mlvDelta}
-            lowDelta={lowDelta}
-            highDelta={highDelta}
+            delta={DELTA_KEYS.has(mc.key) ? (node.entered[`${mc.key}WoW`] ?? null) : null}
+            coverage={coverageFor(mc.key, mc.label)}
           />
         </td>
       ))}
