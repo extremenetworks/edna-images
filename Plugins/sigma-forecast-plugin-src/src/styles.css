@@ -726,3 +726,23 @@ body {
 .forecast-table td.number-clickable:hover {
   background: rgba(51, 51, 51, 0.06);
 }
+
+/* Optional debug panel ("Show debug panel" setting) */
+.debug-panel {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 30;
+  max-height: 40vh;
+  overflow: auto;
+  padding: 6px 10px;
+  background: rgba(26, 26, 46, 0.92);
+  color: #e6e6f0;
+  font: 11px/1.5 monospace;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+.debug-title {
+  font-weight: 600;
+}

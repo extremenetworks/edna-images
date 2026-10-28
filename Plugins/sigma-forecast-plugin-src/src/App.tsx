@@ -34,6 +34,7 @@ client.config.configureEditorPanel([
   { name: 'channelCol', type: 'column', source: 'source', allowMultiple: false, label: 'Channel (MSP/Non-MSP, optional)' },
   { name: 'noteCol', type: 'column', source: 'source', allowMultiple: false, label: 'Note (optional)' },
   { name: 'fcShow', type: 'toggle', label: 'Show Forecast button', defaultValue: true },
+  { name: 'showDebug', type: 'toggle', label: 'Show debug panel', defaultValue: false },
   { name: 'fcAction', type: 'action-trigger', label: 'On Forecast Click' },
   { name: 'labelsGroup', type: 'group', label: 'Column Labels (leave blank for default)' },
   { name: 'closedLabel', type: 'text', placeholder: 'Booked', label: 'Booked label' },
@@ -57,6 +58,24 @@ client.config.configureEditorPanel([
   { name: 'numberClickAction', type: 'action-trigger', label: 'On Number Click' },
   { name: 'monthControl', type: 'variable', label: 'Month Variable (1/2/3 on M1/M2/M3 click)' },
 ]);
+
+/** One control the plugin tried to set on a click, for the debug panel. */
+interface DebugSet {
+  label: string;
+  control: string;
+  column: string | null;
+  columnInData: boolean | null;
+  value: string;
+  error: string | null;
+}
+
+interface DebugClick {
+  kind: string;
+  person: string;
+  rowIndex: number | null;
+  action: string | null;
+  sent: DebugSet[];
+}
 
 /** Month variable value set when an M1/M2/M3 number is clicked. */
 const MONTH_BY_KEY: Record<string, string> = { m1: '1', m2: '2', m3: '3' };
@@ -204,8 +223,7 @@ function App() {
   const [, setSelectedVar3] = useVariable(selectedVar3Control);
   const selectedVar3Col = configString(config.selectedVar3Col);
 
-  const setPersonVariables = useCallback((node: TreeNode) => {
-    if (selectedUserControl) setSelectedUser(node.name);
+  const setPersonVariables = useCallback((node: TreeNode): DebugSet[] => {
     // Placeholder ancestors have no source row, so they have no column values
     // The person's latest row can leave descriptive columns blank, so fall back to
     // any of their rows that has a value
@@ -223,10 +241,19 @@ function App() {
       }
       return '';
     };
-    if (selectedUserIdControl) setSelectedUserId(valueFrom(userIdCol));
-    if (selectedVar1Control) setSelectedVar1(valueFrom(selectedVar1Col));
-    if (selectedVar2Control) setSelectedVar2(valueFrom(selectedVar2Col));
-    if (selectedVar3Control) setSelectedVar3(valueFrom(selectedVar3Col));
+    const sent: DebugSet[] = [];
+    const send = (label: string, control: string, column: string | null, value: string, set: Function) => {
+      if (!control) return;
+      let error: string | null = null;
+      try { set(value); } catch (e) { error = String(e); }
+      sent.push({ label, control, column, columnInData: column ? column in data : null, value, error });
+    };
+    send('Username', selectedUserControl, null, node.name, setSelectedUser);
+    send('User ID', selectedUserIdControl, userIdCol || null, valueFrom(userIdCol), setSelectedUserId);
+    send('Variable 1', selectedVar1Control, selectedVar1Col || null, valueFrom(selectedVar1Col), setSelectedVar1);
+    send('Variable 2', selectedVar2Control, selectedVar2Col || null, valueFrom(selectedVar2Col), setSelectedVar2);
+    send('Variable 3', selectedVar3Control, selectedVar3Col || null, valueFrom(selectedVar3Col), setSelectedVar3);
+    return sent;
   }, [
     selectedUserControl, setSelectedUser, data, nameColId,
     selectedUserIdControl, setSelectedUserId, userIdCol,
@@ -241,16 +268,30 @@ function App() {
   const triggerNumberClick = useActionTrigger(numberClickActionConfig);
   const monthControl = configString(config.monthControl);
   const [, setMonth] = useVariable(monthControl);
+  // Debug panel (settings toggle): shows what the last click read and sent
+  const showDebug = configBool(config.showDebug, false);
+  const [lastClick, setLastClick] = useState<DebugClick | null>(null);
+  const recordClick = useCallback((click: DebugClick) => {
+    if (showDebug) setLastClick(click);
+  }, [showDebug]);
+
   const handleNumberClick = useCallback((node: TreeNode, measureKey: string) => {
-    setPersonVariables(node);
-    if (monthControl) setMonth(MONTH_BY_KEY[measureKey] ?? '');
+    const sent = setPersonVariables(node);
+    if (monthControl) {
+      const month = MONTH_BY_KEY[measureKey] ?? '';
+      let error: string | null = null;
+      try { setMonth(month); } catch (e) { error = String(e); }
+      sent.push({ label: 'Month', control: monthControl, column: null, columnInData: null, value: month, error });
+    }
     if (numberClickActionConfig) triggerNumberClick();
-  }, [setPersonVariables, monthControl, setMonth, numberClickActionConfig, triggerNumberClick]);
+    recordClick({ kind: `Number (${measureKey})`, person: node.name, rowIndex: node.rowIndex, action: numberClickActionConfig || null, sent });
+  }, [setPersonVariables, monthControl, setMonth, numberClickActionConfig, triggerNumberClick, recordClick]);
 
   const handleRowClick = useCallback((node: TreeNode) => {
-    setPersonVariables(node);
+    const sent = setPersonVariables(node);
     if (rowClickActionConfig) triggerRowClick();
-  }, [setPersonVariables, rowClickActionConfig, triggerRowClick]);
+    recordClick({ kind: 'Notes', person: node.name, rowIndex: node.rowIndex, action: rowClickActionConfig || null, sent });
+  }, [setPersonVariables, rowClickActionConfig, triggerRowClick, recordClick]);
 
   // Forecast button: sets the same variables as Notes, then fires its own action.
   // Shown whenever the "Show Forecast button" toggle is on (default).
@@ -267,9 +308,10 @@ function App() {
   const triggerForecast = useActionTrigger(forecastActionConfig);
 
   const handleForecastClick = useCallback((node: TreeNode) => {
-    setPersonVariables(node);
+    const sent = setPersonVariables(node);
     if (forecastActionConfig) triggerForecast();
-  }, [setPersonVariables, forecastActionConfig, triggerForecast]);
+    recordClick({ kind: 'Forecast', person: node.name, rowIndex: node.rowIndex, action: forecastActionConfig || null, sent });
+  }, [setPersonVariables, forecastActionConfig, triggerForecast, recordClick]);
 
   // Measure column definitions
   const measureDefs = useMemo(() => {
@@ -551,6 +593,7 @@ function App() {
   const ancestors = focusPath ? focusPath.slice(0, -1) : [];
 
   return (
+    <>
     <ForecastTable
       root={displayRoot}
       ancestors={ancestors}
@@ -563,6 +606,36 @@ function App() {
       onFocus={handleFocus}
       onClearFocus={clearFocus}
     />
+    {showDebug && <DebugPanel config={config} lastClick={lastClick} />}
+    </>
+  );
+}
+
+/** Settings and last-click details, shown when "Show debug panel" is on. */
+function DebugPanel({ config, lastClick }: { config: Record<string, unknown>; lastClick: DebugClick | null }) {
+  return (
+    <div className="debug-panel">
+      <div className="debug-title">Debug</div>
+      <div>Saved settings: {Object.keys(config).sort().join(', ')}</div>
+      {!lastClick ? (
+        <div>Click Notes, Forecast or a number to see what is sent.</div>
+      ) : (
+        <>
+          <div>
+            Last click: {lastClick.kind} on {lastClick.person} (row {lastClick.rowIndex ?? 'none'}), action:{' '}
+            {lastClick.action ?? 'not set'}
+          </div>
+          {lastClick.sent.length === 0 && <div>No controls set (none configured).</div>}
+          {lastClick.sent.map((d) => (
+            <div key={d.label}>
+              {d.label} → {d.control}: "{d.value}"
+              {d.column && ` (column ${d.columnInData ? 'loaded' : 'NOT loaded'})`}
+              {d.error && ` ERROR: ${d.error}`}
+            </div>
+          ))}
+        </>
+      )}
+    </div>
   );
 }
 
