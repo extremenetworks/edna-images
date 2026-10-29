@@ -67,6 +67,9 @@ client.config.configureEditorPanel([
   { name: 'rowClickAction', type: 'action-trigger', label: 'On Notes Click' },
   { name: 'numberClickAction', type: 'action-trigger', label: 'On Number Click' },
   { name: 'monthControl', type: 'variable', label: 'Month Variable (1/2/3 on M1/M2/M3 click)' },
+  { name: 'funnelControl', type: 'variable', label: 'Funnel Filter Variable (set on Booked/Open Funnel click)' },
+  { name: 'funnelClosedValue', type: 'text', placeholder: 'e.g. Closed', label: 'Booked filter value' },
+  { name: 'funnelOpenValue', type: 'text', placeholder: 'e.g. Open', label: 'Open Funnel filter value' },
 ]);
 
 /** One control the plugin tried to set on a click, for the debug panel. */
@@ -276,11 +279,16 @@ function App() {
   ]);
 
   // Number click: sets the same variables as Notes, plus the month variable (1/2/3 for
-  // M1/M2/M3, cleared for other columns), then fires its own action.
+  // M1/M2/M3) and the funnel filter variable (typed-in value for Booked/Open Funnel), each
+  // cleared for other columns, then fires its own action.
   const numberClickActionConfig = configString(config.numberClickAction);
   const triggerNumberClick = useActionTrigger(numberClickActionConfig);
   const monthControl = configString(config.monthControl);
   const [, setMonth] = useVariable(monthControl);
+  const funnelControl = configString(config.funnelControl);
+  const [, setFunnelFilter] = useVariable(funnelControl);
+  const funnelClosedValue = configString(config.funnelClosedValue);
+  const funnelOpenValue = configString(config.funnelOpenValue);
   // Debug panel (settings toggle): shows what the last click read and sent
   const showDebug = configBool(config.showDebug, false);
   const [lastClick, setLastClick] = useState<DebugClick | null>(null);
@@ -296,9 +304,16 @@ function App() {
       try { setMonth(month); } catch (e) { error = String(e); }
       sent.push({ label: 'Month', control: monthControl, column: null, columnInData: null, value: month, error });
     }
+    if (funnelControl) {
+      // Booked/Open Funnel set the typed-in value; other columns clear it
+      const funnelValue = measureKey === 'closed' ? funnelClosedValue : measureKey === 'open' ? funnelOpenValue : '';
+      let error: string | null = null;
+      try { setFunnelFilter(funnelValue); } catch (e) { error = String(e); }
+      sent.push({ label: 'Funnel filter', control: funnelControl, column: null, columnInData: null, value: funnelValue, error });
+    }
     if (numberClickActionConfig) triggerNumberClick();
     recordClick({ kind: `Number (${measureKey})`, person: node.name, rowIndex: node.rowIndex, values: node.entered, action: numberClickActionConfig || null, sent });
-  }, [setPersonVariables, monthControl, setMonth, numberClickActionConfig, triggerNumberClick, recordClick]);
+  }, [setPersonVariables, monthControl, setMonth, funnelControl, setFunnelFilter, funnelClosedValue, funnelOpenValue, numberClickActionConfig, triggerNumberClick, recordClick]);
 
   const handleRowClick = useCallback((node: TreeNode) => {
     const sent = setPersonVariables(node);
@@ -649,7 +664,7 @@ function App() {
       onToggle={toggleExpand}
       onRowClick={rowClickActionConfig ? handleRowClick : undefined}
       onForecastClick={showForecast ? handleForecastClick : undefined}
-      onNumberClick={numberClickActionConfig || monthControl ? handleNumberClick : undefined}
+      onNumberClick={numberClickActionConfig || monthControl || funnelControl ? handleNumberClick : undefined}
       onFocus={handleFocus}
       onClearFocus={clearFocus}
     />
