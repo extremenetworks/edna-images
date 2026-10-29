@@ -90,7 +90,7 @@
     #content li[data-list] { display: list-item; list-style: none; }
     #content li .ql-ui { display: none; }
     #content ol { list-style: none; padding-left: 0; margin-bottom: 16px; counter-reset: l0 l1 l2 l3 l4 l5 l6 l7 l8; }
-    #content li[data-list]::before { display: inline-block; min-width: 1.4em; font-weight: normal; }
+    #content li[data-list]::before { display: inline-block; margin-right: 0.35em; font-weight: normal; }
     #content li[data-list]:not([class*="ql-indent-"]) { counter-set: l1 0 l2 0 l3 0 l4 0 l5 0 l6 0 l7 0 l8 0; }
     #content li[data-list].ql-indent-1 { counter-set: l2 0 l3 0 l4 0 l5 0 l6 0 l7 0 l8 0; }
     #content li[data-list].ql-indent-2 { counter-set: l3 0 l4 0 l5 0 l6 0 l7 0 l8 0; }
@@ -100,23 +100,23 @@
     #content li[data-list].ql-indent-6 { counter-set: l7 0 l8 0; }
     #content li[data-list].ql-indent-7 { counter-set: l8 0; }
     #content li[data-list="ordered"]:not([class*="ql-indent-"]) { counter-increment: l0; }
-    #content li[data-list="ordered"]:not([class*="ql-indent-"])::before { content: counter(l0, decimal) ". "; }
+    #content li[data-list="ordered"]:not([class*="ql-indent-"])::before { content: counter(l0, decimal) "."; }
     #content li[data-list="ordered"].ql-indent-1 { counter-increment: l1; }
-    #content li[data-list="ordered"].ql-indent-1::before { content: counter(l1, lower-alpha) ". "; }
+    #content li[data-list="ordered"].ql-indent-1::before { content: counter(l1, lower-alpha) "."; }
     #content li[data-list="ordered"].ql-indent-2 { counter-increment: l2; }
-    #content li[data-list="ordered"].ql-indent-2::before { content: counter(l2, lower-roman) ". "; }
+    #content li[data-list="ordered"].ql-indent-2::before { content: counter(l2, lower-roman) "."; }
     #content li[data-list="ordered"].ql-indent-3 { counter-increment: l3; }
-    #content li[data-list="ordered"].ql-indent-3::before { content: counter(l3, decimal) ". "; }
+    #content li[data-list="ordered"].ql-indent-3::before { content: counter(l3, decimal) "."; }
     #content li[data-list="ordered"].ql-indent-4 { counter-increment: l4; }
-    #content li[data-list="ordered"].ql-indent-4::before { content: counter(l4, lower-alpha) ". "; }
+    #content li[data-list="ordered"].ql-indent-4::before { content: counter(l4, lower-alpha) "."; }
     #content li[data-list="ordered"].ql-indent-5 { counter-increment: l5; }
-    #content li[data-list="ordered"].ql-indent-5::before { content: counter(l5, lower-roman) ". "; }
+    #content li[data-list="ordered"].ql-indent-5::before { content: counter(l5, lower-roman) "."; }
     #content li[data-list="ordered"].ql-indent-6 { counter-increment: l6; }
-    #content li[data-list="ordered"].ql-indent-6::before { content: counter(l6, decimal) ". "; }
+    #content li[data-list="ordered"].ql-indent-6::before { content: counter(l6, decimal) "."; }
     #content li[data-list="ordered"].ql-indent-7 { counter-increment: l7; }
-    #content li[data-list="ordered"].ql-indent-7::before { content: counter(l7, lower-alpha) ". "; }
+    #content li[data-list="ordered"].ql-indent-7::before { content: counter(l7, lower-alpha) "."; }
     #content li[data-list="ordered"].ql-indent-8 { counter-increment: l8; }
-    #content li[data-list="ordered"].ql-indent-8::before { content: counter(l8, lower-roman) ". "; }
+    #content li[data-list="ordered"].ql-indent-8::before { content: counter(l8, lower-roman) "."; }
     #content li[data-list="bullet"]::before { content: "\2022"; }
     #content li[data-list="bullet"].ql-indent-1::before, #content li[data-list="bullet"].ql-indent-4::before, #content li[data-list="bullet"].ql-indent-7::before { content: "\25E6"; }
     #content li[data-list="bullet"].ql-indent-2::before, #content li[data-list="bullet"].ql-indent-5::before, #content li[data-list="bullet"].ql-indent-8::before { content: "\25AA"; }
