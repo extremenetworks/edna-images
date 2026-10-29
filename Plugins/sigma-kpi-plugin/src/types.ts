@@ -14,10 +14,14 @@ export interface Kpi {
   comparisons: Comparison[];
   stacked: boolean;
   description?: string;
-  /** Set in Auto Segment mode; makes the card clickable. */
+  /** Set in Auto Segment mode. */
   segmentValue?: string;
   /** Values written to control variables on click, keyed by control number (1, 2). */
   clickValues?: Record<number, string>;
+  /** Card responds to clicks (segment cards, or manual KPIs with click values/action). */
+  clickable?: boolean;
+  /** Manual KPI slot index, used to fire that KPI's own action. */
+  slot?: number;
 }
 
 export interface Theme {

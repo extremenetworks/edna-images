@@ -61,6 +61,9 @@ for (let i = 0; i < MAX_KPIS; i++) {
   E.push({ name: `fmt_${i}`, type: 'text', source: src, label: 'Format', placeholder: FMT_PLACEHOLDER, defaultValue: ',.0' });
   E.push({ name: `desc_${i}`, type: 'text', source: src, label: 'Description / Tooltip', placeholder: 'Hover description', defaultValue: '', multiline: true });
   if (i > 0) E.push({ name: `stack_${i}`, type: 'toggle', source: src, label: 'Stack With Previous', defaultValue: false });
+  E.push({ name: `clickVal1_${i}`, type: 'text', source: src, label: 'Click → Control 1 Value', placeholder: 'e.g. Closed', defaultValue: '' });
+  E.push({ name: `clickVal2_${i}`, type: 'text', source: src, label: 'Click → Control 2 Value', placeholder: 'optional', defaultValue: '' });
+  E.push({ name: `action_${i}`, type: 'action-trigger', label: `KPI ${n} — On Click` });
 
   for (let c = 1; c <= COMP_COUNT; c++) {
     const csrc = `c${c}src_${i}`;
@@ -96,10 +99,10 @@ E.push({ name: 'displayOrder', type: 'text', label: 'Display Order', placeholder
 E.push({ name: 'animEnabled', type: 'toggle', label: 'Enable Animation', defaultValue: true });
 E.push({ name: 'showInfoIcon', type: 'toggle', label: 'Show Description Tooltips', defaultValue: true });
 
-// ── Click interactions (Auto Segment mode) ──
-E.push({ name: 'clickVar1', type: 'variable', label: 'Click → Control 1 (Segment Label)', allowedTypes: ['text'] });
+// ── Click interactions (Control 1/2 are shared; Manual KPIs set hardcoded values) ──
+E.push({ name: 'clickVar1', type: 'variable', label: 'Click → Control 1 (Segment Label / KPI value)', allowedTypes: ['text'] });
 E.push({ name: 'clickVar2', type: 'variable', label: 'Click → Control 2', allowedTypes: ['text'] });
 E.push({ name: 'seg_click2Col', type: 'column', source: 'seg_source', allowMultiple: false, label: 'Control 2 Column (from Segment Source)' });
-E.push({ name: 'segAction', type: 'action-trigger', label: 'On Card Click' });
+E.push({ name: 'segAction', type: 'action-trigger', label: 'On Any Card Click (all cards; per-KPI action overrides)' });
 
 client.config.configureEditorPanel(E);

@@ -54,7 +54,7 @@ interface KpiCardProps {
 }
 
 export function KpiCard({ kpi, index, theme, layout, easing, inline, onCardClick }: KpiCardProps) {
-  const clickable = !!kpi.segmentValue && !!onCardClick;
+  const clickable = !!kpi.clickable && !!onCardClick;
   const ref = useRef<HTMLDivElement>(null);
 
   // Subtle 3D tilt toward the cursor on clickable cards.

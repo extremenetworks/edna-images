@@ -121,6 +121,18 @@ function manualComparisonText(
   return applyTemplate(text, colName, formatNumber(n, fmt), pctOf(mainValue, n));
 }
 
+/** Click behaviour for a Manual KPI: hardcoded control values + its own action. */
+function manualClick(config: Config, i: number): Pick<Kpi, 'clickable' | 'clickValues' | 'slot'> {
+  const v1 = String(config[`clickVal1_${i}`] ?? '').trim();
+  const v2 = String(config[`clickVal2_${i}`] ?? '').trim();
+  const hasAction = !!config[`action_${i}`] || !!config.segAction;
+  if (!v1 && !v2 && !hasAction) return {};
+  const clickValues: Record<number, string> = {};
+  if (v1) clickValues[1] = v1;
+  if (v2) clickValues[2] = v2;
+  return { clickable: true, clickValues, slot: config[`action_${i}`] ? i : undefined };
+}
+
 export default function App() {
   const config = useConfig() as Config;
   const mode = (config.mode || 'Manual').toLowerCase();
@@ -306,6 +318,7 @@ export default function App() {
           comparisons,
           stacked: false,
           segmentValue: label,
+          clickable: true,
           clickValues,
           description: g.desc ?? (descTemplate ? descTemplate.replace(/\{label\}/g, label) : undefined),
         });
@@ -391,6 +404,7 @@ export default function App() {
         comparisons,
         stacked: !!config[`stack_${i}`],
         description: config[`desc_${i}`] || undefined,
+        ...manualClick(config, i),
       });
     }
     return result;
@@ -400,16 +414,21 @@ export default function App() {
   const [, setClickVar1] = useVariable(config.clickVar1 || '');
   const [, setClickVar2] = useVariable(config.clickVar2 || '');
   const triggerCardAction = useActionTrigger(config.segAction || '');
+  // One trigger per manual KPI slot (unconditional, fixed count for hook stability).
+  const kpiActions: Array<() => Promise<void> | void> = [];
+  for (let i = 0; i < MAX_KPIS; i++) kpiActions.push(useActionTrigger(config[`action_${i}`] || ''));
 
   const handleCardClick = useCallback(
     async (kpi: Kpi) => {
-      if (!kpi.segmentValue) return;
+      if (!kpi.clickable) return;
       const vals = kpi.clickValues || {};
       if (vals[1]) await setClickVar1(vals[1]);
       if (vals[2]) await setClickVar2(vals[2]);
-      if (triggerCardAction) await triggerCardAction();
+      const trigger = kpi.slot != null ? kpiActions[kpi.slot] : triggerCardAction;
+      if (trigger) await trigger();
     },
-    [setClickVar1, setClickVar2, triggerCardAction],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [setClickVar1, setClickVar2, triggerCardAction, ...kpiActions],
   );
 
   if (kpis.length === 0) {
