@@ -61,6 +61,12 @@
     .ql-editor .ql-indent-3 { padding-left: 4.5em !important; }
     .ql-editor .ql-indent-4 { padding-left: 6em !important; }
     .ql-editor .ql-indent-5 { padding-left: 7.5em !important; }
+    .ql-editor .ql-indent-6 { padding-left: 9em !important; }
+    .ql-editor .ql-indent-7 { padding-left: 10.5em !important; }
+    .ql-editor .ql-indent-8 { padding-left: 12em !important; }
+    /* Nested bullets cycle: solid, hollow, square (Quill already cycles numbers 1, a, i) */
+    .ql-editor li[data-list=bullet].ql-indent-1 > .ql-ui:before, .ql-editor li[data-list=bullet].ql-indent-4 > .ql-ui:before, .ql-editor li[data-list=bullet].ql-indent-7 > .ql-ui:before { content: '\25E6'; }
+    .ql-editor li[data-list=bullet].ql-indent-2 > .ql-ui:before, .ql-editor li[data-list=bullet].ql-indent-5 > .ql-ui:before, .ql-editor li[data-list=bullet].ql-indent-8 > .ql-ui:before { content: '\25AA'; }
   </style>
 </head>
 <body>
@@ -180,15 +186,7 @@
     Quill.register(SizeStyle, true);
     var AlignStyle = Quill.import('attributors/style/align');
     Quill.register(AlignStyle, true);
-    // Use style-based indent so display plugin can render via inline styles
-    var IndentStyle = Quill.import('attributors/class/indent');
-    // Register a custom style-based indent attributor
     var Parchment = Quill.import('parchment');
-    var IndentStyleAttr = new Parchment.StyleAttributor('indent', 'padding-left', {
-      scope: Parchment.Scope.BLOCK,
-      whitelist: ['1.5em', '3em', '4.5em', '6em', '7.5em', '9em', '10.5em', '12em']
-    });
-    Quill.register(IndentStyleAttr, true);
 
     // Register line-height as a Quill block format so it persists in saved HTML
     var LineHeightStyle = new Parchment.StyleAttributor('lineHeight', 'line-height', {
@@ -235,13 +233,9 @@
         } else if (fmt === 'list') {
           q.format('list', cur.list === val ? false : val);
         } else if (fmt === 'indent') {
-          var dir = parseInt(val);
-          var emValues = [false, '1.5em', '3em', '4.5em', '6em', '7.5em', '9em', '10.5em', '12em'];
-          var curStyle = cur.indent || false;
-          var curLevel = curStyle ? emValues.indexOf(curStyle) : 0;
-          if (curLevel < 0) curLevel = 0;
-          var newLevel = Math.max(0, Math.min(8, curLevel + dir));
-          q.format('indent', emValues[newLevel]);
+          // Quill's native class indent (ql-indent-N) so lists nest with sub-numbering/bullets
+          var level = Math.max(0, Math.min(8, (cur.indent || 0) + parseInt(val)));
+          q.format('indent', level === 0 ? false : level);
         } else if (fmt === 'align') {
           q.format('align', val || false);
         } else if (fmt === 'link') {
@@ -334,6 +328,18 @@
     // Remove any <img> tags (images are not allowed in comments)
     function stripImages(html) { return String(html).replace(/<img\b[^>]*>/gi, ''); }
 
+    // Comments saved while indent was an inline padding-left style -> convert to Quill's ql-indent-N class
+    function legacyIndentToClass(html) {
+      var doc = new DOMParser().parseFromString('<div>' + html + '</div>', 'text/html');
+      doc.querySelectorAll('[style*="padding-left"]').forEach(function (el) {
+        var m = el.style.paddingLeft.match(/^([\d.]+)em$/);
+        if (!m) return;
+        var level = Math.round(parseFloat(m[1]) / 1.5);
+        if (level >= 1 && level <= 8) { el.classList.add('ql-indent-' + level); el.style.removeProperty('padding-left'); }
+      });
+      return doc.body.firstChild.innerHTML;
+    }
+
     function setStatus(msg, type) { statusEl.textContent = msg; statusEl.className = 'status' + (type ? ' ' + type : ''); }
 
     quills.forEach(function (q) {
@@ -403,7 +409,7 @@
             if (String(sec[j]).trim().toLowerCase() !== target) continue;
           }
           var c = col[j];
-          if (c && c.trim()) quills[i].root.innerHTML = stripImages(c);
+          if (c && c.trim()) quills[i].root.innerHTML = stripImages(legacyIndentToClass(c));
           else quills[i].setContents([]);
           found = true;
           break;
