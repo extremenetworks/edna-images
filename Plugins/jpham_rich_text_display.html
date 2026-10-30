@@ -264,6 +264,7 @@
             WHOLE_DOCUMENT: false,
             FORCE_BODY: true
           });
+          preserveLineBreaks(contentEl);
         } else {
           // Markdown content — parse first
           var normalized = normalizeText(text);
@@ -274,6 +275,23 @@
         console.error('Render error:', err);
         contentEl.textContent = text;
       }
+    }
+
+    // Plain newlines inside text (not between tags) would collapse into spaces; turn them into <br>
+    function preserveLineBreaks(root) {
+      var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+      var nodes = [];
+      while (walker.nextNode()) nodes.push(walker.currentNode);
+      nodes.forEach(function (n) {
+        if (n.nodeValue.indexOf('\n') === -1 || !n.nodeValue.trim()) return;
+        if (n.parentNode.closest && n.parentNode.closest('pre, code')) return;
+        var frag = document.createDocumentFragment();
+        n.nodeValue.split(/\r?\n/).forEach(function (part, i) {
+          if (i) frag.appendChild(document.createElement('br'));
+          frag.appendChild(document.createTextNode(part));
+        });
+        n.parentNode.replaceChild(frag, n);
+      });
     }
 
     function unwrapVariable(value) {
