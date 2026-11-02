@@ -375,8 +375,6 @@ function App() {
     const defs: { key: string; configKey: string; label: string }[] = [
       { key: 'closed', configKey: 'closedCol', label: 'Booked' },
       { key: 'open', configKey: 'openCol', label: 'Open Funnel' },
-      { key: 'closedLastWk', configKey: 'closedLastWkCol', label: 'Closed Last Wk' },
-      { key: 'closingNextWk', configKey: 'closingNextWkCol', label: 'Closing Next Wk' },
       { key: 'low', configKey: 'lowCol', label: 'Low' },
       { key: 'mlv', configKey: 'mlvCol', label: 'MLV' },
       { key: 'prevMlv', configKey: 'prevMlvCol', label: 'Prev Wk MLV' },
@@ -395,6 +393,9 @@ function App() {
       { key: 'prevM3', configKey: 'prevM3Col', label: 'Prev Wk M3' },
       { key: 'closedM3', configKey: 'closedM3Col', label: 'M3 Booked' },
       { key: 'openM3', configKey: 'openM3Col', label: 'M3 Open Funnel' },
+      // Weekly funnel columns sit at the far right
+      { key: 'closedLastWk', configKey: 'closedLastWkCol', label: 'Closed Last Wk' },
+      { key: 'closingNextWk', configKey: 'closingNextWkCol', label: 'Closing Next Wk' },
     ];
     return defs;
   }, []);
