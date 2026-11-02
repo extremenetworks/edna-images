@@ -90,7 +90,7 @@ export function MobileCard({ node, depth, measureColumns, isExpanded, onToggle, 
       <div className="mobile-metrics">
         {measureColumns.map((mc) => {
           // Funnel measures (closed/open) show the subtree sum as the primary value
-          const isFunnel = mc.key === 'closed' || mc.key === 'open';
+          const isFunnel = ['closed', 'open', 'closedLastWk', 'closingNextWk'].includes(mc.key);
           const entered = isFunnel && isAggregate
             ? (node.rolledUp[mc.key] ?? null)
             : (node.entered[mc.key] ?? null);

@@ -22,6 +22,8 @@ client.config.configureEditorPanel([
   { name: 'latestCol', type: 'column', source: 'source', allowMultiple: false, label: 'Latest Submission flag (optional, true = use this row)' },
   { name: 'closedCol', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['number', 'integer'], label: 'Booked (Closed)' },
   { name: 'openCol', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['number', 'integer'], label: 'Open Funnel' },
+  { name: 'closedLastWkCol', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['number', 'integer'], label: 'Closed Last Wk (optional)' },
+  { name: 'closingNextWkCol', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['number', 'integer'], label: 'Closing Next Wk (optional)' },
   { name: 'lowCol', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['number', 'integer'], label: 'Low' },
   { name: 'mlvCol', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['number', 'integer'], label: 'MLV (Call)' },
   { name: 'highCol', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['number', 'integer'], label: 'High' },
@@ -49,6 +51,8 @@ client.config.configureEditorPanel([
   { name: 'labelsGroup', type: 'group', label: 'Column Labels (leave blank for default)' },
   { name: 'closedLabel', type: 'text', placeholder: 'Booked', label: 'Booked label' },
   { name: 'openLabel', type: 'text', placeholder: 'Open Funnel', label: 'Open Funnel label' },
+  { name: 'closedLastWkLabel', type: 'text', placeholder: 'Closed Last Wk', label: 'Closed Last Wk label' },
+  { name: 'closingNextWkLabel', type: 'text', placeholder: 'Closing Next Wk', label: 'Closing Next Wk label' },
   { name: 'lowLabel', type: 'text', placeholder: 'Low', label: 'Low label' },
   { name: 'mlvLabel', type: 'text', placeholder: 'MLV', label: 'MLV label' },
   { name: 'highLabel', type: 'text', placeholder: 'High', label: 'High label' },
@@ -70,6 +74,9 @@ client.config.configureEditorPanel([
   { name: 'funnelControl', type: 'variable', label: 'Funnel Filter Variable (set on Booked/Open Funnel click)' },
   { name: 'funnelClosedValue', type: 'text', placeholder: 'e.g. Closed', label: 'Booked filter value' },
   { name: 'funnelOpenValue', type: 'text', placeholder: 'e.g. Open', label: 'Open Funnel filter value' },
+  { name: 'weekControl', type: 'variable', label: 'Week Variable (set on Closed Last Wk/Closing Next Wk click)' },
+  { name: 'lastWkNumCol', type: 'column', source: 'source', allowMultiple: false, label: 'Last Wk number (column)' },
+  { name: 'nextWkNumCol', type: 'column', source: 'source', allowMultiple: false, label: 'Next Wk number (column)' },
 ]);
 
 /** One control the plugin tried to set on a click, for the debug panel. */
@@ -96,7 +103,7 @@ interface DebugClick {
 const MONTH_BY_KEY: Record<string, string> = { m1: '1', m2: '2', m3: '3' };
 
 /** Measures stored per week in the source and summed across all of a person's rows. */
-const SUMMED_ACROSS_ROWS = new Set(['closed', 'open', 'closedM1', 'closedM2', 'closedM3', 'openM1', 'openM2', 'openM3']);
+const SUMMED_ACROSS_ROWS = new Set(['closed', 'open', 'closedLastWk', 'closingNextWk', 'closedM1', 'closedM2', 'closedM3', 'openM1', 'openM2', 'openM3']);
 
 /** Config values for actions, variables and text are strings; ignore anything else. */
 function configString(value: unknown): string {
@@ -289,6 +296,10 @@ function App() {
   const [, setFunnelFilter] = useVariable(funnelControl);
   const funnelClosedValue = configString(config.funnelClosedValue);
   const funnelOpenValue = configString(config.funnelOpenValue);
+  const weekControl = configString(config.weekControl);
+  const [, setWeek] = useVariable(weekControl);
+  const lastWkNumCol = configString(config.lastWkNumCol);
+  const nextWkNumCol = configString(config.nextWkNumCol);
   // Debug panel (settings toggle): shows what the last click read and sent
   const showDebug = configBool(config.showDebug, false);
   const [lastClick, setLastClick] = useState<DebugClick | null>(null);
@@ -311,9 +322,22 @@ function App() {
       try { setFunnelFilter(funnelValue); } catch (e) { error = String(e); }
       sent.push({ label: 'Funnel filter', control: funnelControl, column: null, columnInData: null, value: funnelValue, error });
     }
+    // Closed Last Wk / Closing Next Wk set the week variable to that week's number. The
+    // number is the same on every row, so use the clicked row's, else the first one present.
+    const weekCol = measureKey === 'closedLastWk' ? lastWkNumCol : measureKey === 'closingNextWk' ? nextWkNumCol : '';
+    if (weekControl && weekCol) {
+      const col = data[weekCol];
+      const own = col && node.rowIndex != null ? col[node.rowIndex] : null;
+      const week = own ?? col?.find((v) => v != null) ?? null;
+      let error: string | null = null;
+      if (week != null) {
+        try { setWeek(week); } catch (e) { error = String(e); }
+      }
+      sent.push({ label: 'Week', control: weekControl, column: weekCol, columnInData: weekCol in data, value: week == null ? '' : String(week), error });
+    }
     if (numberClickActionConfig) triggerNumberClick();
     recordClick({ kind: `Number (${measureKey})`, person: node.name, rowIndex: node.rowIndex, values: node.entered, action: numberClickActionConfig || null, sent });
-  }, [setPersonVariables, monthControl, setMonth, funnelControl, setFunnelFilter, funnelClosedValue, funnelOpenValue, numberClickActionConfig, triggerNumberClick, recordClick]);
+  }, [setPersonVariables, monthControl, setMonth, funnelControl, setFunnelFilter, funnelClosedValue, funnelOpenValue, weekControl, setWeek, lastWkNumCol, nextWkNumCol, data, numberClickActionConfig, triggerNumberClick, recordClick]);
 
   const handleRowClick = useCallback((node: TreeNode) => {
     const sent = setPersonVariables(node);
@@ -346,6 +370,8 @@ function App() {
     const defs: { key: string; configKey: string; label: string }[] = [
       { key: 'closed', configKey: 'closedCol', label: 'Booked' },
       { key: 'open', configKey: 'openCol', label: 'Open Funnel' },
+      { key: 'closedLastWk', configKey: 'closedLastWkCol', label: 'Closed Last Wk' },
+      { key: 'closingNextWk', configKey: 'closingNextWkCol', label: 'Closing Next Wk' },
       { key: 'low', configKey: 'lowCol', label: 'Low' },
       { key: 'mlv', configKey: 'mlvCol', label: 'MLV' },
       { key: 'prevMlv', configKey: 'prevMlvCol', label: 'Prev Wk MLV' },
@@ -373,6 +399,8 @@ function App() {
   const labelOverrides: Record<string, string> = {
     closed: configString(config.closedLabel),
     open: configString(config.openLabel),
+    closedLastWk: configString(config.closedLastWkLabel),
+    closingNextWk: configString(config.closingNextWkLabel),
     low: configString(config.lowLabel),
     mlv: configString(config.mlvLabel),
     high: configString(config.highLabel),
@@ -664,7 +692,7 @@ function App() {
       onToggle={toggleExpand}
       onRowClick={rowClickActionConfig ? handleRowClick : undefined}
       onForecastClick={showForecast ? handleForecastClick : undefined}
-      onNumberClick={numberClickActionConfig || monthControl || funnelControl ? handleNumberClick : undefined}
+      onNumberClick={numberClickActionConfig || monthControl || funnelControl || weekControl ? handleNumberClick : undefined}
       onFocus={handleFocus}
       onClearFocus={clearFocus}
     />
