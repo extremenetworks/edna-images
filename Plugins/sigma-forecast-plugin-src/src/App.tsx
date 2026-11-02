@@ -71,9 +71,10 @@ client.config.configureEditorPanel([
   { name: 'rowClickAction', type: 'action-trigger', label: 'On Notes Click' },
   { name: 'numberClickAction', type: 'action-trigger', label: 'On Number Click' },
   { name: 'monthControl', type: 'variable', label: 'Month Variable (1/2/3 on M1/M2/M3 click)' },
-  { name: 'funnelControl', type: 'variable', label: 'Funnel Filter Variable (set on Booked/Open Funnel click)' },
+  { name: 'funnelControl', type: 'variable', label: 'Funnel Filter Variable (set on Booked/Open Funnel/Closing Next Wk click)' },
   { name: 'funnelClosedValue', type: 'text', placeholder: 'e.g. Closed', label: 'Booked filter value' },
   { name: 'funnelOpenValue', type: 'text', placeholder: 'e.g. Open', label: 'Open Funnel filter value' },
+  { name: 'funnelNextWkValue', type: 'text', placeholder: 'e.g. Open', label: 'Closing Next Wk filter value' },
   { name: 'weekControl', type: 'variable', label: 'Week Variable (set on Closed Last Wk/Closing Next Wk click)' },
   { name: 'lastWkNumCol', type: 'column', source: 'source', allowMultiple: false, label: 'Last Wk number (column)' },
   { name: 'nextWkNumCol', type: 'column', source: 'source', allowMultiple: false, label: 'Next Wk number (column)' },
@@ -296,6 +297,7 @@ function App() {
   const [, setFunnelFilter] = useVariable(funnelControl);
   const funnelClosedValue = configString(config.funnelClosedValue);
   const funnelOpenValue = configString(config.funnelOpenValue);
+  const funnelNextWkValue = configString(config.funnelNextWkValue);
   const weekControl = configString(config.weekControl);
   const [, setWeek] = useVariable(weekControl);
   const lastWkNumCol = configString(config.lastWkNumCol);
@@ -316,8 +318,11 @@ function App() {
       sent.push({ label: 'Month', control: monthControl, column: null, columnInData: null, value: month, error });
     }
     if (funnelControl) {
-      // Booked/Open Funnel set the typed-in value; other columns clear it
-      const funnelValue = measureKey === 'closed' ? funnelClosedValue : measureKey === 'open' ? funnelOpenValue : '';
+      // Booked/Open Funnel/Closing Next Wk set the typed-in value; other columns clear it
+      const funnelValue = measureKey === 'closed' ? funnelClosedValue
+        : measureKey === 'open' ? funnelOpenValue
+        : measureKey === 'closingNextWk' ? funnelNextWkValue
+        : '';
       let error: string | null = null;
       try { setFunnelFilter(funnelValue); } catch (e) { error = String(e); }
       sent.push({ label: 'Funnel filter', control: funnelControl, column: null, columnInData: null, value: funnelValue, error });
@@ -337,7 +342,7 @@ function App() {
     }
     if (numberClickActionConfig) triggerNumberClick();
     recordClick({ kind: `Number (${measureKey})`, person: node.name, rowIndex: node.rowIndex, values: node.entered, action: numberClickActionConfig || null, sent });
-  }, [setPersonVariables, monthControl, setMonth, funnelControl, setFunnelFilter, funnelClosedValue, funnelOpenValue, weekControl, setWeek, lastWkNumCol, nextWkNumCol, data, numberClickActionConfig, triggerNumberClick, recordClick]);
+  }, [setPersonVariables, monthControl, setMonth, funnelControl, setFunnelFilter, funnelClosedValue, funnelOpenValue, funnelNextWkValue, weekControl, setWeek, lastWkNumCol, nextWkNumCol, data, numberClickActionConfig, triggerNumberClick, recordClick]);
 
   const handleRowClick = useCallback((node: TreeNode) => {
     const sent = setPersonVariables(node);
