@@ -466,18 +466,19 @@ function App() {
   // Measure column definitions
   const measureDefs = useMemo(() => {
     const defs: { key: string; configKey: string; label: string }[] = [
+      // Forecast call columns first: MLV, Low, High
+      { key: 'mlv', configKey: 'mlvCol', label: 'MLV' },
+      { key: 'low', configKey: 'lowCol', label: 'Low' },
+      { key: 'high', configKey: 'highCol', label: 'High' },
       { key: 'closed', configKey: 'closedCol', label: 'Booked' },
       { key: 'open', configKey: 'openCol', label: 'Open Funnel' },
       { key: 'commit', configKey: 'commitCol', label: 'Commit' },
       { key: 'mostLikely', configKey: 'mostLikelyCol', label: 'Most Likely' },
       { key: 'bestCase', configKey: 'bestCaseCol', label: 'Best Case' },
       { key: 'pipeline', configKey: 'pipelineCol', label: 'Pipeline' },
-      { key: 'low', configKey: 'lowCol', label: 'Low' },
-      { key: 'mlv', configKey: 'mlvCol', label: 'MLV' },
       { key: 'prevMlv', configKey: 'prevMlvCol', label: 'Prev Wk MLV' },
       { key: 'prevLow', configKey: 'prevLowCol', label: 'Prev Wk Low' },
       { key: 'prevHigh', configKey: 'prevHighCol', label: 'Prev Wk High' },
-      { key: 'high', configKey: 'highCol', label: 'High' },
       { key: 'm1', configKey: 'm1Col', label: 'M1' },
       { key: 'm2', configKey: 'm2Col', label: 'M2' },
       { key: 'm3', configKey: 'm3Col', label: 'M3' },
