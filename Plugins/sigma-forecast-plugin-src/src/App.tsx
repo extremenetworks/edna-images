@@ -22,6 +22,10 @@ client.config.configureEditorPanel([
   { name: 'latestCol', type: 'column', source: 'source', allowMultiple: false, label: 'Latest Submission flag (optional, true = use this row)' },
   { name: 'closedCol', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['number', 'integer'], label: 'Booked (Closed)' },
   { name: 'openCol', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['number', 'integer'], label: 'Open Funnel' },
+  { name: 'commitCol', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['number', 'integer'], label: 'Commit (optional)' },
+  { name: 'mostLikelyCol', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['number', 'integer'], label: 'Most Likely (optional)' },
+  { name: 'bestCaseCol', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['number', 'integer'], label: 'Best Case (optional)' },
+  { name: 'pipelineCol', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['number', 'integer'], label: 'Pipeline (optional)' },
   { name: 'closedLastWkCol', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['number', 'integer'], label: 'Closed Last Wk (optional)' },
   { name: 'closingNextWkCol', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['number', 'integer'], label: 'Closing Next Wk (optional)' },
   { name: 'lowCol', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['number', 'integer'], label: 'Low' },
@@ -45,12 +49,17 @@ client.config.configureEditorPanel([
   { name: 'submittedCol', type: 'column', source: 'source', allowMultiple: false, label: 'Status (true = green, otherwise red)' },
   { name: 'channelCol', type: 'column', source: 'source', allowMultiple: false, label: 'Channel (MSP/Non-MSP, optional)' },
   { name: 'noteCol', type: 'column', source: 'source', allowMultiple: false, label: 'Note (optional)' },
+  { name: 'notesShow', type: 'toggle', label: 'Show Notes button', defaultValue: true },
   { name: 'fcShow', type: 'toggle', label: 'Show Forecast button', defaultValue: true },
   { name: 'showDebug', type: 'toggle', label: 'Show debug panel', defaultValue: false },
   { name: 'fcAction', type: 'action-trigger', label: 'On Forecast Click' },
   { name: 'labelsGroup', type: 'group', label: 'Column Labels (leave blank for default)' },
   { name: 'closedLabel', type: 'text', placeholder: 'Booked', label: 'Booked label' },
   { name: 'openLabel', type: 'text', placeholder: 'Open Funnel', label: 'Open Funnel label' },
+  { name: 'commitLabel', type: 'text', placeholder: 'Commit', label: 'Commit label' },
+  { name: 'mostLikelyLabel', type: 'text', placeholder: 'Most Likely', label: 'Most Likely label' },
+  { name: 'bestCaseLabel', type: 'text', placeholder: 'Best Case', label: 'Best Case label' },
+  { name: 'pipelineLabel', type: 'text', placeholder: 'Pipeline', label: 'Pipeline label' },
   { name: 'closedLastWkLabel', type: 'text', placeholder: 'Closed Last Wk', label: 'Closed Last Wk label' },
   { name: 'closingNextWkLabel', type: 'text', placeholder: 'Closing Next Wk', label: 'Closing Next Wk label' },
   { name: 'lowLabel', type: 'text', placeholder: 'Low', label: 'Low label' },
@@ -71,13 +80,47 @@ client.config.configureEditorPanel([
   { name: 'rowClickAction', type: 'action-trigger', label: 'On Notes Click' },
   { name: 'numberClickAction', type: 'action-trigger', label: 'On Number Click' },
   { name: 'monthControl', type: 'variable', label: 'Month Variable (1/2/3 on M1/M2/M3 click)' },
-  { name: 'funnelControl', type: 'variable', label: 'Funnel Filter Variable (set on Booked/Open Funnel/Closed Last Wk click)' },
+  { name: 'funnelControl', type: 'variable', label: 'Funnel Filter Variable (set on Booked/Open Funnel/category/Closed Last Wk click)' },
   { name: 'funnelClosedValue', type: 'text', placeholder: 'e.g. Closed', label: 'Booked filter value' },
   { name: 'funnelOpenValue', type: 'text', placeholder: 'e.g. Open', label: 'Open Funnel filter value' },
+  { name: 'funnelCommitValue', type: 'text', placeholder: 'e.g. Commit', label: 'Commit filter value' },
+  { name: 'funnelMostLikelyValue', type: 'text', placeholder: 'e.g. Most Likely', label: 'Most Likely filter value' },
+  { name: 'funnelBestCaseValue', type: 'text', placeholder: 'e.g. Best Case', label: 'Best Case filter value' },
+  { name: 'funnelPipelineValue', type: 'text', placeholder: 'e.g. Pipeline', label: 'Pipeline filter value' },
   { name: 'funnelLastWkValue', type: 'text', placeholder: 'e.g. Closed', label: 'Closed Last Wk filter value' },
   { name: 'weekControl', type: 'variable', label: 'Week Variable (set on Closed Last Wk/Closing Next Wk click)' },
   { name: 'lastWkNumCol', type: 'column', source: 'source', allowMultiple: false, label: 'Last Wk number (column)' },
   { name: 'nextWkNumCol', type: 'column', source: 'source', allowMultiple: false, label: 'Next Wk number (column)' },
+  { name: 'timeframeControl', type: 'variable', label: 'Timeframe Variable (set on number click)' },
+  { name: 'timeframeGroup', type: 'group', label: 'Timeframe values (typed, or a column that overrides it)' },
+  { name: 'tf_closed', type: 'text', placeholder: 'Quarter', label: 'Booked timeframe' },
+  { name: 'tf_closedCol', type: 'column', source: 'source', allowMultiple: false, label: 'Booked timeframe (column, optional)' },
+  { name: 'tf_open', type: 'text', placeholder: 'Quarter', label: 'Open Funnel timeframe' },
+  { name: 'tf_openCol', type: 'column', source: 'source', allowMultiple: false, label: 'Open Funnel timeframe (column, optional)' },
+  { name: 'tf_commit', type: 'text', placeholder: 'Quarter', label: 'Commit timeframe' },
+  { name: 'tf_commitCol', type: 'column', source: 'source', allowMultiple: false, label: 'Commit timeframe (column, optional)' },
+  { name: 'tf_mostLikely', type: 'text', placeholder: 'Quarter', label: 'Most Likely timeframe' },
+  { name: 'tf_mostLikelyCol', type: 'column', source: 'source', allowMultiple: false, label: 'Most Likely timeframe (column, optional)' },
+  { name: 'tf_bestCase', type: 'text', placeholder: 'Quarter', label: 'Best Case timeframe' },
+  { name: 'tf_bestCaseCol', type: 'column', source: 'source', allowMultiple: false, label: 'Best Case timeframe (column, optional)' },
+  { name: 'tf_pipeline', type: 'text', placeholder: 'Quarter', label: 'Pipeline timeframe' },
+  { name: 'tf_pipelineCol', type: 'column', source: 'source', allowMultiple: false, label: 'Pipeline timeframe (column, optional)' },
+  { name: 'tf_low', type: 'text', placeholder: 'Quarter', label: 'Low timeframe' },
+  { name: 'tf_lowCol', type: 'column', source: 'source', allowMultiple: false, label: 'Low timeframe (column, optional)' },
+  { name: 'tf_mlv', type: 'text', placeholder: 'Quarter', label: 'MLV timeframe' },
+  { name: 'tf_mlvCol', type: 'column', source: 'source', allowMultiple: false, label: 'MLV timeframe (column, optional)' },
+  { name: 'tf_high', type: 'text', placeholder: 'Quarter', label: 'High timeframe' },
+  { name: 'tf_highCol', type: 'column', source: 'source', allowMultiple: false, label: 'High timeframe (column, optional)' },
+  { name: 'tf_m1', type: 'text', placeholder: 'Month 1', label: 'M1 timeframe' },
+  { name: 'tf_m1Col', type: 'column', source: 'source', allowMultiple: false, label: 'M1 timeframe (column, optional)' },
+  { name: 'tf_m2', type: 'text', placeholder: 'Month 2', label: 'M2 timeframe' },
+  { name: 'tf_m2Col', type: 'column', source: 'source', allowMultiple: false, label: 'M2 timeframe (column, optional)' },
+  { name: 'tf_m3', type: 'text', placeholder: 'Month 3', label: 'M3 timeframe' },
+  { name: 'tf_m3Col', type: 'column', source: 'source', allowMultiple: false, label: 'M3 timeframe (column, optional)' },
+  { name: 'tf_closedLastWk', type: 'text', placeholder: 'Last Week', label: 'Closed Last Wk timeframe' },
+  { name: 'tf_closedLastWkCol', type: 'column', source: 'source', allowMultiple: false, label: 'Closed Last Wk timeframe (column, optional)' },
+  { name: 'tf_closingNextWk', type: 'text', placeholder: 'Next Week', label: 'Closing Next Wk timeframe' },
+  { name: 'tf_closingNextWkCol', type: 'column', source: 'source', allowMultiple: false, label: 'Closing Next Wk timeframe (column, optional)' },
 ]);
 
 /** One control the plugin tried to set on a click, for the debug panel. */
@@ -100,11 +143,29 @@ interface DebugClick {
   values?: Record<string, number>;
 }
 
+/** Timeframe sent for each column when its typed value and column are both blank. */
+const DEFAULT_TIMEFRAME: Record<string, string> = {
+  closed: 'Quarter',
+  open: 'Quarter',
+  commit: 'Quarter',
+  mostLikely: 'Quarter',
+  bestCase: 'Quarter',
+  pipeline: 'Quarter',
+  low: 'Quarter',
+  mlv: 'Quarter',
+  high: 'Quarter',
+  m1: 'Month 1',
+  m2: 'Month 2',
+  m3: 'Month 3',
+  closedLastWk: 'Last Week',
+  closingNextWk: 'Next Week',
+};
+
 /** Month variable value set when an M1/M2/M3 number is clicked. */
 const MONTH_BY_KEY: Record<string, string> = { m1: '1', m2: '2', m3: '3' };
 
 /** Measures stored per week in the source and summed across all of a person's rows. */
-const SUMMED_ACROSS_ROWS = new Set(['closed', 'open', 'closedLastWk', 'closingNextWk', 'closedM1', 'closedM2', 'closedM3', 'openM1', 'openM2', 'openM3']);
+const SUMMED_ACROSS_ROWS = new Set(['closed', 'open', 'commit', 'mostLikely', 'bestCase', 'pipeline', 'closedLastWk', 'closingNextWk', 'closedM1', 'closedM2', 'closedM3', 'openM1', 'openM2', 'openM3']);
 
 /** Config values for actions, variables and text are strings; ignore anything else. */
 function configString(value: unknown): string {
@@ -298,6 +359,24 @@ function App() {
   const funnelClosedValue = configString(config.funnelClosedValue);
   const funnelOpenValue = configString(config.funnelOpenValue);
   const funnelLastWkValue = configString(config.funnelLastWkValue);
+  const funnelValues: Record<string, string> = {
+    closed: funnelClosedValue,
+    open: funnelOpenValue,
+    commit: configString(config.funnelCommitValue),
+    mostLikely: configString(config.funnelMostLikelyValue),
+    bestCase: configString(config.funnelBestCaseValue),
+    pipeline: configString(config.funnelPipelineValue),
+    closedLastWk: funnelLastWkValue,
+  };
+  const funnelValuesKey = JSON.stringify(funnelValues);
+  // Timeframe: column value for the clicked person if mapped, else the typed value, else default
+  const timeframeControl = configString(config.timeframeControl);
+  const [, setTimeframe] = useVariable(timeframeControl);
+  const timeframeConfig: Record<string, { typed: string; col: string }> = {};
+  for (const key of Object.keys(DEFAULT_TIMEFRAME)) {
+    timeframeConfig[key] = { typed: configString(config[`tf_${key}`]), col: configString(config[`tf_${key}Col`]) };
+  }
+  const timeframeKey = JSON.stringify(timeframeConfig);
   const weekControl = configString(config.weekControl);
   const [, setWeek] = useVariable(weekControl);
   const lastWkNumCol = configString(config.lastWkNumCol);
@@ -318,11 +397,8 @@ function App() {
       sent.push({ label: 'Month', control: monthControl, column: null, columnInData: null, value: month, error });
     }
     if (funnelControl) {
-      // Booked/Open Funnel/Closed Last Wk set the typed-in value; other columns clear it
-      const funnelValue = measureKey === 'closed' ? funnelClosedValue
-        : measureKey === 'open' ? funnelOpenValue
-        : measureKey === 'closedLastWk' ? funnelLastWkValue
-        : '';
+      // Booked/Open Funnel/categories/Closed Last Wk set the typed-in value; others clear it
+      const funnelValue = funnelValues[measureKey] ?? '';
       let error: string | null = null;
       try { setFunnelFilter(funnelValue); } catch (e) { error = String(e); }
       sent.push({ label: 'Funnel filter', control: funnelControl, column: null, columnInData: null, value: funnelValue, error });
@@ -340,9 +416,26 @@ function App() {
       }
       sent.push({ label: 'Week', control: weekControl, column: weekCol, columnInData: weekCol in data, value: week == null ? '' : String(week), error });
     }
+    if (timeframeControl) {
+      const tf = timeframeConfig[measureKey];
+      let value = '';
+      if (tf?.col) {
+        const col = data[tf.col];
+        const own = col && node.rowIndex != null ? col[node.rowIndex] : null;
+        const raw = own ?? col?.find((v) => v != null) ?? null;
+        if (raw != null) value = String(raw);
+      }
+      if (!value) value = tf?.typed || DEFAULT_TIMEFRAME[measureKey] || '';
+      let error: string | null = null;
+      try { setTimeframe(value); } catch (e) { error = String(e); }
+      sent.push({ label: 'Timeframe', control: timeframeControl, column: tf?.col || null, columnInData: tf?.col ? tf.col in data : null, value, error });
+    }
     if (numberClickActionConfig) triggerNumberClick();
     recordClick({ kind: `Number (${measureKey})`, person: node.name, rowIndex: node.rowIndex, values: node.entered, action: numberClickActionConfig || null, sent });
-  }, [setPersonVariables, monthControl, setMonth, funnelControl, setFunnelFilter, funnelClosedValue, funnelOpenValue, funnelLastWkValue, weekControl, setWeek, lastWkNumCol, nextWkNumCol, data, numberClickActionConfig, triggerNumberClick, recordClick]);
+  }, [setPersonVariables, monthControl, setMonth, funnelControl, setFunnelFilter, funnelClosedValue, funnelOpenValue, funnelLastWkValue, funnelValuesKey, timeframeControl, setTimeframe, timeframeKey, weekControl, setWeek, lastWkNumCol, nextWkNumCol, data, numberClickActionConfig, triggerNumberClick, recordClick]);
+
+  // Notes button: shown whenever the "Show Notes button" toggle is on (default)
+  const showNotes = configBool(config.notesShow, true);
 
   const handleRowClick = useCallback((node: TreeNode) => {
     const sent = setPersonVariables(node);
@@ -375,6 +468,10 @@ function App() {
     const defs: { key: string; configKey: string; label: string }[] = [
       { key: 'closed', configKey: 'closedCol', label: 'Booked' },
       { key: 'open', configKey: 'openCol', label: 'Open Funnel' },
+      { key: 'commit', configKey: 'commitCol', label: 'Commit' },
+      { key: 'mostLikely', configKey: 'mostLikelyCol', label: 'Most Likely' },
+      { key: 'bestCase', configKey: 'bestCaseCol', label: 'Best Case' },
+      { key: 'pipeline', configKey: 'pipelineCol', label: 'Pipeline' },
       { key: 'low', configKey: 'lowCol', label: 'Low' },
       { key: 'mlv', configKey: 'mlvCol', label: 'MLV' },
       { key: 'prevMlv', configKey: 'prevMlvCol', label: 'Prev Wk MLV' },
@@ -405,6 +502,10 @@ function App() {
   const labelOverrides: Record<string, string> = {
     closed: configString(config.closedLabel),
     open: configString(config.openLabel),
+    commit: configString(config.commitLabel),
+    mostLikely: configString(config.mostLikelyLabel),
+    bestCase: configString(config.bestCaseLabel),
+    pipeline: configString(config.pipelineLabel),
     closedLastWk: configString(config.closedLastWkLabel),
     closingNextWk: configString(config.closingNextWkLabel),
     low: configString(config.lowLabel),
@@ -696,9 +797,9 @@ function App() {
       measureColumns={measureColumns}
       expandedIds={expandedIds}
       onToggle={toggleExpand}
-      onRowClick={rowClickActionConfig ? handleRowClick : undefined}
+      onRowClick={showNotes ? handleRowClick : undefined}
       onForecastClick={showForecast ? handleForecastClick : undefined}
-      onNumberClick={numberClickActionConfig || monthControl || funnelControl || weekControl ? handleNumberClick : undefined}
+      onNumberClick={numberClickActionConfig || monthControl || funnelControl || weekControl || timeframeControl ? handleNumberClick : undefined}
       onFocus={handleFocus}
       onClearFocus={clearFocus}
     />
