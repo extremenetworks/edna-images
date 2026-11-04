@@ -35,7 +35,8 @@ export function MobileCard({ node, depth, measureColumns, isExpanded, onToggle, 
   // Bar data
   const mlv = node.entered.mlv ?? null;
   const closed = isAggregate ? (node.rolledUp.closed ?? node.entered.closed ?? 0) : (node.entered.closed ?? 0);
-  const openFunnel = isAggregate ? (node.rolledUp.open ?? node.entered.open ?? 0) : (node.entered.open ?? 0);
+  // Coverage uses booked + commit
+  const openFunnel = isAggregate ? (node.rolledUp.commit ?? node.entered.commit ?? 0) : (node.entered.commit ?? 0);
 
   return (
     <div
@@ -147,7 +148,7 @@ function MobileCoverageBar({ closed, open, mlv }: { closed: number; open: number
       </div>
       <div className="mobile-coverage-labels">
         <span className="coverage-label"><span className="dot-booked" /> {Math.round(closedPct)}% booked</span>
-        <span className="coverage-label"><span className="dot-open" /> {Math.round(openPct)}% open</span>
+        <span className="coverage-label"><span className="dot-open" /> {Math.round(openPct)}% commit</span>
         <span className="coverage-label coverage-total">{totalCoverage}% coverage</span>
       </div>
     </div>

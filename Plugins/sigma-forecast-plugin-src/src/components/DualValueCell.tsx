@@ -1,7 +1,7 @@
 import React from 'react';
 import { formatCompact, formatWoW, coverageParts } from '../lib/format';
 
-/** Booked + open funnel against a forecast value, drawn as a stacked coverage bar. */
+/** Booked + commit against a forecast value, drawn as a stacked coverage bar. */
 export interface CoverageData {
   closed: number;
   open: number;
@@ -73,7 +73,7 @@ function CoverageBar({ closed, open, mlv, label }: { closed: number; open: numbe
   const { closedPct, openPct, totalPct, closedWidth, openWidth } = coverageParts(closed, open, mlv);
   const totalCoverage = Math.round(totalPct);
 
-  const tooltip = `Booked: ${formatCompact(closed)} (${Math.round(closedPct)}%)\nOpen: ${formatCompact(open)} (${Math.round(openPct)}%)\n${label}: ${formatCompact(mlv)}\nCoverage: ${totalCoverage}%`;
+  const tooltip = `Booked: ${formatCompact(closed)} (${Math.round(closedPct)}%)\nCommit: ${formatCompact(open)} (${Math.round(openPct)}%)\n${label}: ${formatCompact(mlv)}\nCoverage: ${totalCoverage}%`;
 
   return (
     <div className="stacked-bar-container" title={tooltip}>
