@@ -13,9 +13,10 @@ interface Props {
   onRowClick?: (node: TreeNode) => void;
   onForecastClick?: (node: TreeNode) => void;
   onNumberClick?: (node: TreeNode, measureKey: string) => void;
+  showMsp?: boolean;
 }
 
-export function MobileCard({ node, depth, measureColumns, isExpanded, onToggle, onFocus, onRowClick, onForecastClick, onNumberClick }: Props) {
+export function MobileCard({ node, depth, measureColumns, isExpanded, onToggle, onFocus, onRowClick, onForecastClick, onNumberClick, showMsp }: Props) {
   const hasChildren = node.children.length > 0;
   const isAggregate = !node.isLeaf;
   const indentPx = depth * 16;
@@ -66,7 +67,10 @@ export function MobileCard({ node, depth, measureColumns, isExpanded, onToggle, 
             ) : (
               <span className="name-text" title={node.name}>{node.name}</span>
             )}
-            <span className="role-text">{roleDisplay}</span>
+            <span className="role-text">
+              {roleDisplay}
+              {showMsp && node.isMsp && <span className="msp-check" title="MSP partner"> ✓ MSP</span>}
+            </span>
           </div>
         </div>
         <div className="status-cell">
@@ -102,7 +106,7 @@ export function MobileCard({ node, depth, measureColumns, isExpanded, onToggle, 
           const fmt = isWoW ? formatWoW : formatCompact;
 
           // Change since last week for Low/MLV/High/M1-M3
-          const mlvDelta = ['low', 'mlv', 'high', 'm1', 'm2', 'm3'].includes(mc.key)
+          const mlvDelta = ['low', 'mlv', 'high', 'msp', 'm1', 'm2', 'm3'].includes(mc.key)
             ? (node.entered[`${mc.key}WoW`] ?? null)
             : null;
           const showDelta = mlvDelta !== null && mlvDelta !== 0;

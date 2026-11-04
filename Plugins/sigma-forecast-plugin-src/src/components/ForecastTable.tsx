@@ -14,6 +14,8 @@ interface Props {
   onRowClick?: (node: TreeNode) => void;
   onForecastClick?: (node: TreeNode) => void;
   onNumberClick?: (node: TreeNode, measureKey: string) => void;
+  /** Show the MSP checkmark column (an Is MSP column is mapped) */
+  showMsp?: boolean;
   onFocus: (nodeId: string) => void;
   onClearFocus: () => void;
 }
@@ -22,7 +24,7 @@ interface Props {
 const NOTES_LEFT = 316;
 const NOTES_WIDTH = 56;
 
-export function ForecastTable({ root, ancestors, measureColumns, expandedIds, onToggle, onRowClick, onForecastClick, onNumberClick, onFocus, onClearFocus }: Props) {
+export function ForecastTable({ root, ancestors, measureColumns, expandedIds, onToggle, onRowClick, onForecastClick, onNumberClick, showMsp, onFocus, onClearFocus }: Props) {
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < MOBILE_BREAKPOINT);
 
   useEffect(() => {
@@ -58,6 +60,7 @@ export function ForecastTable({ root, ancestors, measureColumns, expandedIds, on
               onRowClick={onRowClick}
               onForecastClick={onForecastClick}
               onNumberClick={onNumberClick}
+              showMsp={showMsp}
             />
           ))}
         </div>
@@ -80,6 +83,7 @@ export function ForecastTable({ root, ancestors, measureColumns, expandedIds, on
               {onForecastClick && (
                 <th className="col-forecast th-sticky frozen-edge" style={{ left: forecastLeft }}>Forecast</th>
               )}
+              {showMsp && <th className="col-msp th-top">MSP</th>}
               {measureColumns.map((mc) => (
                 <th key={mc.key} className="col-measure th-top">{mc.label}</th>
               ))}
@@ -97,6 +101,7 @@ export function ForecastTable({ root, ancestors, measureColumns, expandedIds, on
                 onRowClick={onRowClick}
                 onForecastClick={onForecastClick}
                 onNumberClick={onNumberClick}
+                showMsp={showMsp}
                 forecastLeft={forecastLeft}
                 lastFrozen={lastFrozen}
                 onFocus={item.depth > 0 ? onFocus : undefined}

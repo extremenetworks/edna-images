@@ -7,7 +7,7 @@ import type { CoverageData } from './DualValueCell';
 const FUNNEL_KEYS = new Set(['closed', 'open', 'commit', 'mostLikely', 'bestCase', 'pipeline', 'closedLastWk', 'closingNextWk']);
 
 // Measures that show a change-since-last-week arrow (value minus its Prev Wk column)
-const DELTA_KEYS = new Set(['low', 'mlv', 'high', 'm1', 'm2', 'm3']);
+const DELTA_KEYS = new Set(['low', 'mlv', 'high', 'msp', 'm1', 'm2', 'm3']);
 
 // Monthly funnel keys behind each month's coverage bar
 const MONTH_FUNNEL: Record<string, { closed: string; open: string }> = {
@@ -25,6 +25,7 @@ interface Props {
   onRowClick?: (node: TreeNode) => void;
   onForecastClick?: (node: TreeNode) => void;
   onNumberClick?: (node: TreeNode, measureKey: string) => void;
+  showMsp?: boolean;
   forecastLeft?: number;
   lastFrozen?: 'status' | 'notes' | 'forecast';
   onFocus?: (nodeId: string) => void;
@@ -33,7 +34,7 @@ interface Props {
   onMouseLeave?: () => void;
 }
 
-export function TreeRow({ node, depth, measureColumns, isExpanded, onToggle, onRowClick, onForecastClick, onNumberClick, forecastLeft, lastFrozen = 'status', onFocus, isHovered, onMouseEnter, onMouseLeave }: Props) {
+export function TreeRow({ node, depth, measureColumns, isExpanded, onToggle, onRowClick, onForecastClick, onNumberClick, showMsp, forecastLeft, lastFrozen = 'status', onFocus, isHovered, onMouseEnter, onMouseLeave }: Props) {
   const hasChildren = node.children.length > 0;
   const isAggregate = !node.isLeaf;
   const indentPx = depth * 24;
@@ -127,6 +128,11 @@ export function TreeRow({ node, depth, measureColumns, isExpanded, onToggle, onR
           {!isPlaceholder && (
             <ForecastButton name={node.name} onClick={() => onForecastClick(node)} />
           )}
+        </td>
+      )}
+      {showMsp && (
+        <td className="col-msp">
+          {node.isMsp && <span className="msp-check" title="MSP partner">✓</span>}
         </td>
       )}
       {measureColumns.map((mc) => (

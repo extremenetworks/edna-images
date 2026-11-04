@@ -746,3 +746,15 @@ body {
 .debug-title {
   font-weight: 600;
 }
+
+/* MSP partner checkmark column */
+.forecast-table th.col-msp,
+.forecast-table td.col-msp {
+  width: 56px;
+  min-width: 56px;
+  text-align: center;
+}
+.msp-check {
+  color: #1a9e5c;
+  font-weight: 700;
+}

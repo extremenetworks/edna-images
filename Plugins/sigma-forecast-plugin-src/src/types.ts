@@ -3,6 +3,8 @@ export interface ForecastRow {
   role: string;
   values: Record<string, number | null>;
   submitted: boolean | null;
+  /** Partner is an MSP (true on any of the person's rows) */
+  isMsp?: boolean;
   hierarchyPath: string[] | null;
   channel: string | null;
   /** Index of this row in the source element's data, for looking up extra columns */
@@ -24,6 +26,8 @@ export interface TreeNode {
   entered: Record<string, number>;
   rolledUp: Record<string, number>;
   submitted: boolean | null;
+  /** Partner is an MSP; undefined for placeholder ancestors */
+  isMsp?: boolean;
   hierarchyPath: string[] | null;
   channel: string | null;
   /** Source data row index; null for placeholder ancestors with no data row */

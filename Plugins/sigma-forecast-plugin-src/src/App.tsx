@@ -31,6 +31,8 @@ client.config.configureEditorPanel([
   { name: 'lowCol', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['number', 'integer'], label: 'Low' },
   { name: 'mlvCol', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['number', 'integer'], label: 'MLV (Call)' },
   { name: 'highCol', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['number', 'integer'], label: 'High' },
+  { name: 'mspCol', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['number', 'integer'], label: 'MSP forecast (optional)' },
+  { name: 'prevMspCol', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['number', 'integer'], label: 'Prev Wk MSP (optional)' },
   { name: 'prevMlvCol', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['number', 'integer'], label: 'Prev Wk MLV (optional)' },
   { name: 'prevLowCol', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['number', 'integer'], label: 'Prev Wk Low (optional)' },
   { name: 'prevHighCol', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['number', 'integer'], label: 'Prev Wk High (optional)' },
@@ -47,6 +49,7 @@ client.config.configureEditorPanel([
   { name: 'closedM3Col', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['number', 'integer'], label: 'M3 Booked (optional, for coverage)' },
   { name: 'openM3Col', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['number', 'integer'], label: 'M3 Commit (optional, for coverage)' },
   { name: 'submittedCol', type: 'column', source: 'source', allowMultiple: false, label: 'Status (true = green, otherwise red)' },
+  { name: 'mspFlagCol', type: 'column', source: 'source', allowMultiple: false, label: 'Is MSP (true = checkmark, optional)' },
   { name: 'channelCol', type: 'column', source: 'source', allowMultiple: false, label: 'Channel (MSP/Non-MSP, optional)' },
   { name: 'noteCol', type: 'column', source: 'source', allowMultiple: false, label: 'Note (optional)' },
   { name: 'notesShow', type: 'toggle', label: 'Show Notes button', defaultValue: true },
@@ -65,6 +68,7 @@ client.config.configureEditorPanel([
   { name: 'lowLabel', type: 'text', placeholder: 'Low', label: 'Low label' },
   { name: 'mlvLabel', type: 'text', placeholder: 'MLV', label: 'MLV label' },
   { name: 'highLabel', type: 'text', placeholder: 'High', label: 'High label' },
+  { name: 'mspLabel', type: 'text', placeholder: 'MSP', label: 'MSP label' },
   { name: 'm1Label', type: 'text', placeholder: 'M1', label: 'M1 label' },
   { name: 'm2Label', type: 'text', placeholder: 'M2', label: 'M2 label' },
   { name: 'm3Label', type: 'text', placeholder: 'M3', label: 'M3 label' },
@@ -111,6 +115,8 @@ client.config.configureEditorPanel([
   { name: 'tf_mlvCol', type: 'column', source: 'source', allowMultiple: false, label: 'MLV timeframe (column, optional)' },
   { name: 'tf_high', type: 'text', placeholder: 'Quarter', label: 'High timeframe' },
   { name: 'tf_highCol', type: 'column', source: 'source', allowMultiple: false, label: 'High timeframe (column, optional)' },
+  { name: 'tf_msp', type: 'text', placeholder: 'Quarter', label: 'MSP timeframe' },
+  { name: 'tf_mspCol', type: 'column', source: 'source', allowMultiple: false, label: 'MSP timeframe (column, optional)' },
   { name: 'tf_m1', type: 'text', placeholder: 'Month 1', label: 'M1 timeframe' },
   { name: 'tf_m1Col', type: 'column', source: 'source', allowMultiple: false, label: 'M1 timeframe (column, optional)' },
   { name: 'tf_m2', type: 'text', placeholder: 'Month 2', label: 'M2 timeframe' },
@@ -154,6 +160,7 @@ const DEFAULT_TIMEFRAME: Record<string, string> = {
   low: 'Quarter',
   mlv: 'Quarter',
   high: 'Quarter',
+  msp: 'Quarter',
   m1: 'Month 1',
   m2: 'Month 2',
   m3: 'Month 3',
@@ -241,6 +248,7 @@ function groupChannelNodes(node: TreeNode): void {
       entered: {},
       rolledUp: {},
       submitted: first.submitted,
+      isMsp: first.isMsp,
       hierarchyPath: first.hierarchyPath,
       channel: null,
       rowIndex: null,
@@ -280,6 +288,7 @@ function App() {
   const hierarchyColId = (config.hierarchyCol as string) || '';
   const dateColId = (config.dateCol as string) || '';
   const latestColId = configString(config.latestCol);
+  const mspFlagColId = configString(config.mspFlagCol);
   const submittedColId = (config.submittedCol as string) || '';
   const channelColId = (config.channelCol as string) || '';
 
@@ -470,6 +479,8 @@ function App() {
       { key: 'mlv', configKey: 'mlvCol', label: 'MLV' },
       { key: 'low', configKey: 'lowCol', label: 'Low' },
       { key: 'high', configKey: 'highCol', label: 'High' },
+      { key: 'msp', configKey: 'mspCol', label: 'MSP' },
+      { key: 'prevMsp', configKey: 'prevMspCol', label: 'Prev Wk MSP' },
       { key: 'closed', configKey: 'closedCol', label: 'Booked' },
       { key: 'open', configKey: 'openCol', label: 'Open Funnel' },
       { key: 'commit', configKey: 'commitCol', label: 'Commit' },
@@ -512,6 +523,7 @@ function App() {
     low: configString(config.lowLabel),
     mlv: configString(config.mlvLabel),
     high: configString(config.highLabel),
+    msp: configString(config.mspLabel),
     m1: configString(config.m1Label),
     m2: configString(config.m2Label),
     m3: configString(config.m3Label),
@@ -535,7 +547,7 @@ function App() {
   // Visible columns exclude prev-week columns (their deltas show as badges) and the monthly
   // funnel columns (they only feed the M1-M3 coverage bars)
   const HIDDEN_KEYS = new Set([
-    'prevMlv', 'prevLow', 'prevHigh',
+    'prevMlv', 'prevLow', 'prevHigh', 'prevMsp',
     'prevM1', 'prevM2', 'prevM3',
     'closedM1', 'closedM2', 'closedM3',
     'openM1', 'openM2', 'openM3',
@@ -610,6 +622,18 @@ function App() {
       }
     }
 
+    // People marked as an MSP partner on any of their rows
+    const mspNames = new Set<string>();
+    const mspData = mspFlagColId ? data[mspFlagColId] : null;
+    if (mspData) {
+      for (let r = 0; r < rowCount; r++) {
+        if (isTrue(mspData[r])) {
+          const n = names[r] != null ? String(names[r]).trim() : '';
+          if (n) mspNames.add(n);
+        }
+      }
+    }
+
     // Second pass: build rows from the winning indices
     const rows: ForecastRow[] = [];
     for (const [dedupeKey, i] of bestRowIndex) {
@@ -674,9 +698,9 @@ function App() {
       values.mlvWoW = (values.mlv != null && values.prevMlv != null) ? values.mlv - values.prevMlv : null;
       values.lowWoW = (values.low != null && values.prevLow != null) ? values.low - values.prevLow : null;
       values.highWoW = (values.high != null && values.prevHigh != null) ? values.high - values.prevHigh : null;
-      for (const m of ['m1', 'm2', 'm3']) {
+      for (const m of ['m1', 'm2', 'm3', 'msp']) {
         const cur = values[m];
-        const prev = values[`prev${m.toUpperCase()}`];
+        const prev = values[m === 'msp' ? 'prevMsp' : `prev${m.toUpperCase()}`];
         values[`${m}WoW`] = cur != null && prev != null ? cur - prev : null;
       }
 
@@ -694,7 +718,7 @@ function App() {
         }
       }
 
-      rows.push({ name, role, values, submitted, hierarchyPath, channel, rowIndex: i });
+      rows.push({ name, role, values, submitted, isMsp: mspFlagColId ? mspNames.has(name) : undefined, hierarchyPath, channel, rowIndex: i });
     }
 
     // Parse roles and build tree nodes
@@ -709,6 +733,7 @@ function App() {
       ),
       rolledUp: {},
       submitted: row.submitted,
+      isMsp: row.isMsp,
       hierarchyPath: row.hierarchyPath,
       channel: row.channel,
       rowIndex: row.rowIndex,
@@ -732,7 +757,7 @@ function App() {
     computeRollups(root, measureKeys);
 
     return root;
-  }, [data, nameColId, roleColId, hierarchyColId, dateColId, latestColId, submittedColId, channelColId, allMeasureColumns]);
+  }, [data, nameColId, roleColId, hierarchyColId, dateColId, latestColId, mspFlagColId, submittedColId, channelColId, allMeasureColumns]);
 
   // Expand/collapse state
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
@@ -800,6 +825,7 @@ function App() {
       onToggle={toggleExpand}
       onRowClick={showNotes ? handleRowClick : undefined}
       onForecastClick={showForecast ? handleForecastClick : undefined}
+      showMsp={Boolean(mspFlagColId)}
       onNumberClick={numberClickActionConfig || monthControl || funnelControl || weekControl || timeframeControl ? handleNumberClick : undefined}
       onFocus={handleFocus}
       onClearFocus={clearFocus}
