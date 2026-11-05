@@ -27,6 +27,7 @@ client.config.configureEditorPanel([
   { name: 'bestCaseCol', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['number', 'integer'], label: 'Best Case (optional)' },
   { name: 'pipelineCol', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['number', 'integer'], label: 'Pipeline (optional)' },
   { name: 'closedLastWkCol', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['number', 'integer'], label: 'Closed Last Wk (optional)' },
+  { name: 'currentWkCol', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['number', 'integer'], label: 'Current Wk (optional)' },
   { name: 'closingNextWkCol', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['number', 'integer'], label: 'Closing Next Wk (optional)' },
   { name: 'lowCol', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['number', 'integer'], label: 'Low' },
   { name: 'mlvCol', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['number', 'integer'], label: 'MLV (Call)' },
@@ -64,6 +65,7 @@ client.config.configureEditorPanel([
   { name: 'bestCaseLabel', type: 'text', placeholder: 'Best Case', label: 'Best Case label' },
   { name: 'pipelineLabel', type: 'text', placeholder: 'Pipeline', label: 'Pipeline label' },
   { name: 'closedLastWkLabel', type: 'text', placeholder: 'Closed Last Wk', label: 'Closed Last Wk label' },
+  { name: 'currentWkLabel', type: 'text', placeholder: 'Current Wk', label: 'Current Wk label' },
   { name: 'closingNextWkLabel', type: 'text', placeholder: 'Closing Next Wk', label: 'Closing Next Wk label' },
   { name: 'lowLabel', type: 'text', placeholder: 'Low', label: 'Low label' },
   { name: 'mlvLabel', type: 'text', placeholder: 'MLV', label: 'MLV label' },
@@ -92,8 +94,10 @@ client.config.configureEditorPanel([
   { name: 'funnelBestCaseValue', type: 'text', placeholder: 'e.g. Best Case', label: 'Best Case filter value' },
   { name: 'funnelPipelineValue', type: 'text', placeholder: 'e.g. Pipeline', label: 'Pipeline filter value' },
   { name: 'funnelLastWkValue', type: 'text', placeholder: 'e.g. Closed', label: 'Closed Last Wk filter value' },
-  { name: 'weekControl', type: 'variable', label: 'Week Variable (set on Closed Last Wk/Closing Next Wk click)' },
+  { name: 'funnelCurrentWkValue', type: 'text', placeholder: 'e.g. Open', label: 'Current Wk filter value' },
+  { name: 'weekControl', type: 'variable', label: 'Week Variable (set on Closed Last Wk/Current Wk/Closing Next Wk click)' },
   { name: 'lastWkNumCol', type: 'column', source: 'source', allowMultiple: false, label: 'Last Wk number (column)' },
+  { name: 'currentWkNumCol', type: 'column', source: 'source', allowMultiple: false, label: 'Current Wk number (column)' },
   { name: 'nextWkNumCol', type: 'column', source: 'source', allowMultiple: false, label: 'Next Wk number (column)' },
   { name: 'timeframeControl', type: 'variable', label: 'Timeframe Variable (set on number click)' },
   { name: 'timeframeGroup', type: 'group', label: 'Timeframe values (typed, or a column that overrides it)' },
@@ -125,6 +129,8 @@ client.config.configureEditorPanel([
   { name: 'tf_m3Col', type: 'column', source: 'source', allowMultiple: false, label: 'M3 timeframe (column, optional)' },
   { name: 'tf_closedLastWk', type: 'text', placeholder: 'Last Week', label: 'Closed Last Wk timeframe' },
   { name: 'tf_closedLastWkCol', type: 'column', source: 'source', allowMultiple: false, label: 'Closed Last Wk timeframe (column, optional)' },
+  { name: 'tf_currentWk', type: 'text', placeholder: 'Current Week', label: 'Current Wk timeframe' },
+  { name: 'tf_currentWkCol', type: 'column', source: 'source', allowMultiple: false, label: 'Current Wk timeframe (column, optional)' },
   { name: 'tf_closingNextWk', type: 'text', placeholder: 'Next Week', label: 'Closing Next Wk timeframe' },
   { name: 'tf_closingNextWkCol', type: 'column', source: 'source', allowMultiple: false, label: 'Closing Next Wk timeframe (column, optional)' },
 ]);
@@ -165,6 +171,7 @@ const DEFAULT_TIMEFRAME: Record<string, string> = {
   m2: 'Month 2',
   m3: 'Month 3',
   closedLastWk: 'Last Week',
+  currentWk: 'Current Week',
   closingNextWk: 'Next Week',
 };
 
@@ -172,7 +179,7 @@ const DEFAULT_TIMEFRAME: Record<string, string> = {
 const MONTH_BY_KEY: Record<string, string> = { m1: '1', m2: '2', m3: '3' };
 
 /** Measures stored per week in the source and summed across all of a person's rows. */
-const SUMMED_ACROSS_ROWS = new Set(['closed', 'open', 'commit', 'mostLikely', 'bestCase', 'pipeline', 'closedLastWk', 'closingNextWk', 'closedM1', 'closedM2', 'closedM3', 'openM1', 'openM2', 'openM3']);
+const SUMMED_ACROSS_ROWS = new Set(['closed', 'open', 'commit', 'mostLikely', 'bestCase', 'pipeline', 'closedLastWk', 'currentWk', 'closingNextWk', 'closedM1', 'closedM2', 'closedM3', 'openM1', 'openM2', 'openM3']);
 
 /** Config values for actions, variables and text are strings; ignore anything else. */
 function configString(value: unknown): string {
@@ -376,6 +383,7 @@ function App() {
     bestCase: configString(config.funnelBestCaseValue),
     pipeline: configString(config.funnelPipelineValue),
     closedLastWk: funnelLastWkValue,
+    currentWk: configString(config.funnelCurrentWkValue),
   };
   const funnelValuesKey = JSON.stringify(funnelValues);
   // Timeframe: column value for the clicked person if mapped, else the typed value, else default
@@ -390,6 +398,7 @@ function App() {
   const [, setWeek] = useVariable(weekControl);
   const lastWkNumCol = configString(config.lastWkNumCol);
   const nextWkNumCol = configString(config.nextWkNumCol);
+  const currentWkNumCol = configString(config.currentWkNumCol);
   // Debug panel (settings toggle): shows what the last click read and sent
   const showDebug = configBool(config.showDebug, false);
   const [lastClick, setLastClick] = useState<DebugClick | null>(null);
@@ -414,7 +423,10 @@ function App() {
     }
     // Closed Last Wk / Closing Next Wk set the week variable to that week's number. The
     // number is the same on every row, so use the clicked row's, else the first one present.
-    const weekCol = measureKey === 'closedLastWk' ? lastWkNumCol : measureKey === 'closingNextWk' ? nextWkNumCol : '';
+    const weekCol = measureKey === 'closedLastWk' ? lastWkNumCol
+      : measureKey === 'currentWk' ? currentWkNumCol
+      : measureKey === 'closingNextWk' ? nextWkNumCol
+      : '';
     if (weekControl && weekCol) {
       const col = data[weekCol];
       const own = col && node.rowIndex != null ? col[node.rowIndex] : null;
@@ -441,7 +453,7 @@ function App() {
     }
     if (numberClickActionConfig) triggerNumberClick();
     recordClick({ kind: `Number (${measureKey})`, person: node.name, rowIndex: node.rowIndex, values: node.entered, action: numberClickActionConfig || null, sent });
-  }, [setPersonVariables, monthControl, setMonth, funnelControl, setFunnelFilter, funnelClosedValue, funnelOpenValue, funnelLastWkValue, funnelValuesKey, timeframeControl, setTimeframe, timeframeKey, weekControl, setWeek, lastWkNumCol, nextWkNumCol, data, numberClickActionConfig, triggerNumberClick, recordClick]);
+  }, [setPersonVariables, monthControl, setMonth, funnelControl, setFunnelFilter, funnelClosedValue, funnelOpenValue, funnelLastWkValue, funnelValuesKey, timeframeControl, setTimeframe, timeframeKey, weekControl, setWeek, lastWkNumCol, currentWkNumCol, nextWkNumCol, data, numberClickActionConfig, triggerNumberClick, recordClick]);
 
   // Notes button: shown whenever the "Show Notes button" toggle is on (default)
   const showNotes = configBool(config.notesShow, true);
@@ -504,6 +516,7 @@ function App() {
       { key: 'openM3', configKey: 'openM3Col', label: 'M3 Commit' },
       // Weekly funnel columns sit at the far right
       { key: 'closedLastWk', configKey: 'closedLastWkCol', label: 'Closed Last Wk' },
+      { key: 'currentWk', configKey: 'currentWkCol', label: 'Current Wk' },
       { key: 'closingNextWk', configKey: 'closingNextWkCol', label: 'Closing Next Wk' },
     ];
     return defs;
@@ -519,6 +532,7 @@ function App() {
     bestCase: configString(config.bestCaseLabel),
     pipeline: configString(config.pipelineLabel),
     closedLastWk: configString(config.closedLastWkLabel),
+    currentWk: configString(config.currentWkLabel),
     closingNextWk: configString(config.closingNextWkLabel),
     low: configString(config.lowLabel),
     mlv: configString(config.mlvLabel),

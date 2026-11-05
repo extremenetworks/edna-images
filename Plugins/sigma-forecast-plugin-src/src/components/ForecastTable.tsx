@@ -83,7 +83,7 @@ export function ForecastTable({ root, ancestors, measureColumns, expandedIds, on
               {onForecastClick && (
                 <th className="col-forecast th-sticky frozen-edge" style={{ left: forecastLeft }}>Forecast</th>
               )}
-              {showMsp && <th className="col-msp th-top">MSP</th>}
+              {showMsp && <th className="col-msp th-top">Is MSP</th>}
               {measureColumns.map((mc) => (
                 <th key={mc.key} className="col-measure th-top">{mc.label}</th>
               ))}

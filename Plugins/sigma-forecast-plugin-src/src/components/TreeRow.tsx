@@ -4,7 +4,7 @@ import { DualValueCell } from './DualValueCell';
 import type { CoverageData } from './DualValueCell';
 
 // Funnel measures are pure sums of the subtree; show the sum as the primary value
-const FUNNEL_KEYS = new Set(['closed', 'open', 'commit', 'mostLikely', 'bestCase', 'pipeline', 'closedLastWk', 'closingNextWk']);
+const FUNNEL_KEYS = new Set(['closed', 'open', 'commit', 'mostLikely', 'bestCase', 'pipeline', 'closedLastWk', 'currentWk', 'closingNextWk']);
 
 // Measures that show a change-since-last-week arrow (value minus its Prev Wk column)
 const DELTA_KEYS = new Set(['low', 'mlv', 'high', 'msp', 'm1', 'm2', 'm3']);
