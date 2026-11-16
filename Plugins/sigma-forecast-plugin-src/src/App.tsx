@@ -754,8 +754,17 @@ function App() {
     }
 
     // Parse roles and build tree nodes
-    const nodes: TreeNode[] = rows.map((row, idx) => ({
-      id: `node-${idx}`,
+    // Ids come from the person's identity, not their position in the data, so focus and
+    // expanded rows stay on the same people when the data reloads in a different order
+    const usedIds = new Map<string, number>();
+    const stableId = (row: ForecastRow) => {
+      const base = `p:${row.name}|${row.role}|${(row.hierarchyPath ?? []).join('>')}|${row.channel ?? ''}`;
+      const n = usedIds.get(base) ?? 0;
+      usedIds.set(base, n + 1);
+      return n === 0 ? base : `${base}#${n}`;
+    };
+    const nodes: TreeNode[] = rows.map((row) => ({
+      id: stableId(row),
       name: row.name,
       role: row.role,
       initials: getInitials(row.name),
