@@ -57,7 +57,7 @@ export function MobileCard({ node, depth, measureColumns, isExpanded, onToggle, 
             {node.initials}
           </span>
           <div className="mobile-name-info">
-            {onFocus && hasChildren ? (
+            {onFocus ? (
               <button
                 className="name-text name-focus"
                 onClick={(e) => { e.stopPropagation(); onFocus(node.id); }}

@@ -98,11 +98,11 @@ export function TreeRow({ node, depth, measureColumns, isExpanded, onToggle, onR
             {node.initials}
           </span>
           <div className="name-info">
-            {onFocus && hasChildren ? (
+            {onFocus ? (
               <button
                 className="name-text name-focus"
                 onClick={() => onFocus(node.id)}
-                title={`Focus on ${node.name}'s hierarchy`}
+                title={hasChildren ? `Focus on ${node.name}'s hierarchy` : `Focus on ${node.name}`}
               >
                 {node.name}
               </button>
