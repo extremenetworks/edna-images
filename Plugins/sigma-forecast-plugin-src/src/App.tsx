@@ -20,6 +20,7 @@ client.config.configureEditorPanel([
   { name: 'hierarchyCol', type: 'column', source: 'source', allowMultiple: false, label: 'Hierarchy Path (JSON array, optional)' },
   { name: 'dateCol', type: 'column', source: 'source', allowMultiple: false, label: 'Created Date (for latest entry)' },
   { name: 'latestCol', type: 'column', source: 'source', allowMultiple: false, label: 'Latest Submission flag (optional, true = use this row)' },
+  { name: 'currentWkFlagCol', type: 'column', source: 'source', allowMultiple: false, label: 'Current Week flag (optional, true = row for Last/Current/Next Wk columns)' },
   { name: 'closedCol', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['number', 'integer'], label: 'Booked (Closed)' },
   { name: 'openCol', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['number', 'integer'], label: 'Open Funnel' },
   { name: 'commitCol', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['number', 'integer'], label: 'Commit (optional)' },
@@ -178,8 +179,12 @@ const DEFAULT_TIMEFRAME: Record<string, string> = {
 /** Month variable value set when an M1/M2/M3 number is clicked. */
 const MONTH_BY_KEY: Record<string, string> = { m1: '1', m2: '2', m3: '3' };
 
-/** Measures stored per week in the source and summed across all of a person's rows. */
-const SUMMED_ACROSS_ROWS = new Set(['closed', 'open', 'commit', 'mostLikely', 'bestCase', 'pipeline', 'closedLastWk', 'currentWk', 'closingNextWk', 'closedM1', 'closedM2', 'closedM3', 'openM1', 'openM2', 'openM3']);
+/** Weekly columns read from the row flagged as the current week, when that flag is mapped. */
+const CURRENT_WEEK_KEYS = new Set(['closedLastWk', 'currentWk', 'closingNextWk']);
+
+/** Measures stored per week in the source and summed across all of a person's rows. The
+ * Last/Current/Next Wk columns are not summed: like the forecast values, they come from one row. */
+const SUMMED_ACROSS_ROWS = new Set(['closed', 'open', 'commit', 'mostLikely', 'bestCase', 'pipeline', 'closedM1', 'closedM2', 'closedM3', 'openM1', 'openM2', 'openM3']);
 
 /** Config values for actions, variables and text are strings; ignore anything else. */
 function configString(value: unknown): string {
@@ -295,6 +300,7 @@ function App() {
   const hierarchyColId = (config.hierarchyCol as string) || '';
   const dateColId = (config.dateCol as string) || '';
   const latestColId = configString(config.latestCol);
+  const currentWkFlagColId = configString(config.currentWkFlagCol);
   const mspFlagColId = configString(config.mspFlagCol);
   const submittedColId = (config.submittedCol as string) || '';
   const channelColId = (config.channelCol as string) || '';
@@ -588,6 +594,7 @@ function App() {
     // using the date column to determine which is latest
     const dateData = dateColId ? data[dateColId] : null;
     const latestData = latestColId ? data[latestColId] : null;
+    const currentWkData = currentWkFlagColId ? data[currentWkFlagColId] : null;
 
     // First pass: find the best (most recent) row index for each name+role
     const bestRowIndex = new Map<string, number>();
@@ -676,12 +683,23 @@ function App() {
         }
       }
 
+      // Row flagged as the current week, for the Last/Current/Next Wk columns
+      let currentWkRow: number | null = null;
+      if (currentWkData) {
+        for (const r of rowsByKey.get(dedupeKey) ?? [i]) {
+          if (isTrue(currentWkData[r])) { currentWkRow = r; break; }
+        }
+      }
+
       const values: Record<string, number | null> = {};
       for (const mc of allMeasureColumns) {
         if (mc.colId === '__computed__') continue;
         const colData = data[mc.colId];
         if (!colData) { values[mc.key] = null; continue; }
-        if (SUMMED_ACROSS_ROWS.has(mc.key)) {
+        if (CURRENT_WEEK_KEYS.has(mc.key) && currentWkData) {
+          // Weekly columns read the current-week row only (blank if the person has none)
+          values[mc.key] = currentWkRow != null ? toNum(colData[currentWkRow]) : null;
+        } else if (SUMMED_ACROSS_ROWS.has(mc.key)) {
           // Booked and Open Funnel hold one week's amount per row; the quarter total is
           // the sum over every week in the source
           let total: number | null = null;
@@ -771,7 +789,7 @@ function App() {
     computeRollups(root, measureKeys);
 
     return root;
-  }, [data, nameColId, roleColId, hierarchyColId, dateColId, latestColId, mspFlagColId, submittedColId, channelColId, allMeasureColumns]);
+  }, [data, nameColId, roleColId, hierarchyColId, dateColId, latestColId, currentWkFlagColId, mspFlagColId, submittedColId, channelColId, allMeasureColumns]);
 
   // Expand/collapse state
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
