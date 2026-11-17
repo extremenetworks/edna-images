@@ -493,9 +493,9 @@ function App() {
   // Measure column definitions
   const measureDefs = useMemo(() => {
     const defs: { key: string; configKey: string; label: string }[] = [
-      // Forecast call columns first: MLV, Low, High
-      { key: 'mlv', configKey: 'mlvCol', label: 'MLV' },
+      // Forecast call columns first: Low, MLV, High
       { key: 'low', configKey: 'lowCol', label: 'Low' },
+      { key: 'mlv', configKey: 'mlvCol', label: 'MLV' },
       { key: 'high', configKey: 'highCol', label: 'High' },
       { key: 'msp', configKey: 'mspCol', label: 'MSP' },
       { key: 'prevMsp', configKey: 'prevMspCol', label: 'Prev Wk MSP' },
