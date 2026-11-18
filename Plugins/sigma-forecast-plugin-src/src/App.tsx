@@ -813,6 +813,8 @@ function App() {
       groupChannelNodes(root);
     }
 
+    sortTreeByName(root);
+
     const measureKeys = allMeasureColumns.map((mc) => mc.key);
     computeRollups(root, measureKeys);
 
@@ -954,6 +956,14 @@ function isLater(a: unknown, b: unknown): boolean {
   const tb = Date.parse(String(b));
   if (!isNaN(ta) && !isNaN(tb)) return ta > tb;
   return String(a) > String(b);
+}
+
+/** Sort each manager's reports A-Z by name (then channel), at every level. */
+function sortTreeByName(node: TreeNode): void {
+  node.children.sort((a, b) =>
+    a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })
+    || (a.channel ?? '').localeCompare(b.channel ?? ''));
+  for (const child of node.children) sortTreeByName(child);
 }
 
 /** Path of nodes from root down to the node with the given id, or null if not found. */
