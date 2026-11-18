@@ -33,8 +33,9 @@ client.config.configureEditorPanel([
   { name: 'lowCol', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['number', 'integer'], label: 'Low' },
   { name: 'mlvCol', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['number', 'integer'], label: 'MLV (Call)' },
   { name: 'highCol', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['number', 'integer'], label: 'High' },
-  { name: 'mspCol', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['number', 'integer'], label: 'MSP forecast (optional)' },
+  { name: 'mspCol', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['number', 'integer'], label: 'MSP MLV (optional)' },
   { name: 'prevMspCol', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['number', 'integer'], label: 'Prev Wk MSP (optional)' },
+  { name: 'mspFunnelCol', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['number', 'integer'], label: 'MSP Funnel (optional)' },
   { name: 'prevMlvCol', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['number', 'integer'], label: 'Prev Wk MLV (optional)' },
   { name: 'prevLowCol', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['number', 'integer'], label: 'Prev Wk Low (optional)' },
   { name: 'prevHighCol', type: 'column', source: 'source', allowMultiple: false, allowedTypes: ['number', 'integer'], label: 'Prev Wk High (optional)' },
@@ -71,7 +72,8 @@ client.config.configureEditorPanel([
   { name: 'lowLabel', type: 'text', placeholder: 'Low', label: 'Low label' },
   { name: 'mlvLabel', type: 'text', placeholder: 'MLV', label: 'MLV label' },
   { name: 'highLabel', type: 'text', placeholder: 'High', label: 'High label' },
-  { name: 'mspLabel', type: 'text', placeholder: 'MSP', label: 'MSP label' },
+  { name: 'mspLabel', type: 'text', placeholder: 'MSP MLV', label: 'MSP MLV label' },
+  { name: 'mspFunnelLabel', type: 'text', placeholder: 'MSP Funnel', label: 'MSP Funnel label' },
   { name: 'm1Label', type: 'text', placeholder: 'M1', label: 'M1 label' },
   { name: 'm2Label', type: 'text', placeholder: 'M2', label: 'M2 label' },
   { name: 'm3Label', type: 'text', placeholder: 'M3', label: 'M3 label' },
@@ -88,6 +90,8 @@ client.config.configureEditorPanel([
   { name: 'numberClickAction', type: 'action-trigger', label: 'On Number Click' },
   { name: 'monthControl', type: 'variable', label: 'Month Variable (1/2/3 on M1/M2/M3 click)' },
   { name: 'funnelControl', type: 'variable', label: 'Funnel Filter Variable (set on Booked/Open Funnel/category/Closed Last Wk click)' },
+  { name: 'mspControl', type: 'variable', label: 'MSP Variable (set on MSP MLV / MSP Funnel click)' },
+  { name: 'mspControlValue', type: 'text', placeholder: 'e.g. true', label: 'MSP filter value' },
   { name: 'funnelClosedValue', type: 'text', placeholder: 'e.g. Closed', label: 'Booked filter value' },
   { name: 'funnelOpenValue', type: 'text', placeholder: 'e.g. Open', label: 'Open Funnel filter value' },
   { name: 'funnelCommitValue', type: 'text', placeholder: 'e.g. Commit', label: 'Commit filter value' },
@@ -120,8 +124,10 @@ client.config.configureEditorPanel([
   { name: 'tf_mlvCol', type: 'column', source: 'source', allowMultiple: false, label: 'MLV timeframe (column, optional)' },
   { name: 'tf_high', type: 'text', placeholder: 'Quarter', label: 'High timeframe' },
   { name: 'tf_highCol', type: 'column', source: 'source', allowMultiple: false, label: 'High timeframe (column, optional)' },
-  { name: 'tf_msp', type: 'text', placeholder: 'Quarter', label: 'MSP timeframe' },
-  { name: 'tf_mspCol', type: 'column', source: 'source', allowMultiple: false, label: 'MSP timeframe (column, optional)' },
+  { name: 'tf_msp', type: 'text', placeholder: 'Quarter', label: 'MSP MLV timeframe' },
+  { name: 'tf_mspCol', type: 'column', source: 'source', allowMultiple: false, label: 'MSP MLV timeframe (column, optional)' },
+  { name: 'tf_mspFunnel', type: 'text', placeholder: 'Quarter', label: 'MSP Funnel timeframe' },
+  { name: 'tf_mspFunnelCol', type: 'column', source: 'source', allowMultiple: false, label: 'MSP Funnel timeframe (column, optional)' },
   { name: 'tf_m1', type: 'text', placeholder: 'Month 1', label: 'M1 timeframe' },
   { name: 'tf_m1Col', type: 'column', source: 'source', allowMultiple: false, label: 'M1 timeframe (column, optional)' },
   { name: 'tf_m2', type: 'text', placeholder: 'Month 2', label: 'M2 timeframe' },
@@ -168,6 +174,7 @@ const DEFAULT_TIMEFRAME: Record<string, string> = {
   mlv: 'Quarter',
   high: 'Quarter',
   msp: 'Quarter',
+  mspFunnel: 'Quarter',
   m1: 'Month 1',
   m2: 'Month 2',
   m3: 'Month 3',
@@ -184,7 +191,7 @@ const CURRENT_WEEK_KEYS = new Set(['closedLastWk', 'currentWk', 'closingNextWk']
 
 /** Measures stored per week in the source and summed across all of a person's rows. The
  * Last/Current/Next Wk columns are not summed: like the forecast values, they come from one row. */
-const SUMMED_ACROSS_ROWS = new Set(['closed', 'open', 'commit', 'mostLikely', 'bestCase', 'pipeline', 'closedM1', 'closedM2', 'closedM3', 'openM1', 'openM2', 'openM3']);
+const SUMMED_ACROSS_ROWS = new Set(['closed', 'open', 'mspFunnel', 'commit', 'mostLikely', 'bestCase', 'pipeline', 'closedM1', 'closedM2', 'closedM3', 'openM1', 'openM2', 'openM3']);
 
 /** Config values for actions, variables and text are strings; ignore anything else. */
 function configString(value: unknown): string {
@@ -377,6 +384,9 @@ function App() {
   const monthControl = configString(config.monthControl);
   const [, setMonth] = useVariable(monthControl);
   const funnelControl = configString(config.funnelControl);
+  const mspControl = configString(config.mspControl);
+  const [, setMspFilter] = useVariable(mspControl);
+  const mspControlValue = configString(config.mspControlValue);
   const [, setFunnelFilter] = useVariable(funnelControl);
   const funnelClosedValue = configString(config.funnelClosedValue);
   const funnelOpenValue = configString(config.funnelOpenValue);
@@ -427,6 +437,13 @@ function App() {
       try { setFunnelFilter(funnelValue); } catch (e) { error = String(e); }
       sent.push({ label: 'Funnel filter', control: funnelControl, column: null, columnInData: null, value: funnelValue, error });
     }
+    if (mspControl) {
+      // MSP MLV / MSP Funnel set the typed-in value; other columns clear it
+      const mspValue = measureKey === 'msp' || measureKey === 'mspFunnel' ? mspControlValue : '';
+      let error: string | null = null;
+      try { setMspFilter(mspValue); } catch (e) { error = String(e); }
+      sent.push({ label: 'MSP filter', control: mspControl, column: null, columnInData: null, value: mspValue, error });
+    }
     // Closed Last Wk / Closing Next Wk set the week variable to that week's number. The
     // number is the same on every row, so use the clicked row's, else the first one present.
     const weekCol = measureKey === 'closedLastWk' ? lastWkNumCol
@@ -459,7 +476,7 @@ function App() {
     }
     if (numberClickActionConfig) triggerNumberClick();
     recordClick({ kind: `Number (${measureKey})`, person: node.name, rowIndex: node.rowIndex, values: node.entered, action: numberClickActionConfig || null, sent });
-  }, [setPersonVariables, monthControl, setMonth, funnelControl, setFunnelFilter, funnelClosedValue, funnelOpenValue, funnelLastWkValue, funnelValuesKey, timeframeControl, setTimeframe, timeframeKey, weekControl, setWeek, lastWkNumCol, currentWkNumCol, nextWkNumCol, data, numberClickActionConfig, triggerNumberClick, recordClick]);
+  }, [setPersonVariables, monthControl, setMonth, funnelControl, setFunnelFilter, funnelClosedValue, funnelOpenValue, funnelLastWkValue, funnelValuesKey, mspControl, setMspFilter, mspControlValue, timeframeControl, setTimeframe, timeframeKey, weekControl, setWeek, lastWkNumCol, currentWkNumCol, nextWkNumCol, data, numberClickActionConfig, triggerNumberClick, recordClick]);
 
   // Notes button: shown whenever the "Show Notes button" toggle is on (default)
   const showNotes = configBool(config.notesShow, true);
@@ -497,8 +514,9 @@ function App() {
       { key: 'low', configKey: 'lowCol', label: 'Low' },
       { key: 'mlv', configKey: 'mlvCol', label: 'MLV' },
       { key: 'high', configKey: 'highCol', label: 'High' },
-      { key: 'msp', configKey: 'mspCol', label: 'MSP' },
+      { key: 'msp', configKey: 'mspCol', label: 'MSP MLV' },
       { key: 'prevMsp', configKey: 'prevMspCol', label: 'Prev Wk MSP' },
+      { key: 'mspFunnel', configKey: 'mspFunnelCol', label: 'MSP Funnel' },
       { key: 'closed', configKey: 'closedCol', label: 'Booked' },
       { key: 'open', configKey: 'openCol', label: 'Open Funnel' },
       { key: 'commit', configKey: 'commitCol', label: 'Commit' },
@@ -544,6 +562,7 @@ function App() {
     mlv: configString(config.mlvLabel),
     high: configString(config.highLabel),
     msp: configString(config.mspLabel),
+    mspFunnel: configString(config.mspFunnelLabel),
     m1: configString(config.m1Label),
     m2: configString(config.m2Label),
     m3: configString(config.m3Label),
@@ -867,7 +886,7 @@ function App() {
       onRowClick={showNotes ? handleRowClick : undefined}
       onForecastClick={showForecast ? handleForecastClick : undefined}
       showMsp={Boolean(mspFlagColId)}
-      onNumberClick={numberClickActionConfig || monthControl || funnelControl || weekControl || timeframeControl ? handleNumberClick : undefined}
+      onNumberClick={numberClickActionConfig || monthControl || funnelControl || mspControl || weekControl || timeframeControl ? handleNumberClick : undefined}
       onFocus={handleFocus}
       onClearFocus={clearFocus}
     />
