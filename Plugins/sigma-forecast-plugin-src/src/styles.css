@@ -372,11 +372,15 @@ body {
 }
 
 .bar-booked {
-  background: #22c55e;
+  background: #548c4f;
 }
 
 .bar-open {
-  background: #3b82f6;
+  background: #6e32c8;
+}
+
+.bar-likely {
+  background: #5ea2d0;
 }
 
 .progress-label {
@@ -515,7 +519,7 @@ body {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #22c55e;
+  background: #548c4f;
   flex-shrink: 0;
 }
 
@@ -523,7 +527,15 @@ body {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #3b82f6;
+  background: #6e32c8;
+  flex-shrink: 0;
+}
+
+.dot-likely {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #5ea2d0;
   flex-shrink: 0;
 }
 

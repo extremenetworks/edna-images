@@ -1,11 +1,13 @@
 import React from 'react';
 import { formatCompact, formatWoW, coverageParts } from '../lib/format';
 
-/** Booked + commit against a forecast value, drawn as a stacked coverage bar. */
+/** Booked + commit (+ most likely) against a forecast value, drawn as a stacked coverage bar. */
 export interface CoverageData {
   closed: number;
   open: number;
   total: number;
+  /** Most Likely amount, the bar's third segment (0 when not used) */
+  likely?: number;
   /** Name of the forecast value in the tooltip, e.g. MLV or M1 */
   label: string;
 }
@@ -36,7 +38,7 @@ export function DualValueCell({ entered, rolledUp, isAggregate, isWoW, delta, co
           {fmt(entered)}
           {showDelta && <WoWBadge delta={delta!} />}
         </span>
-        {showBar && <CoverageBar closed={coverage!.closed} open={coverage!.open} mlv={coverage!.total} label={coverage!.label} />}
+        {showBar && <CoverageBar closed={coverage!.closed} open={coverage!.open} likely={coverage!.likely ?? 0} mlv={coverage!.total} label={coverage!.label} />}
       </div>
     );
   }
@@ -50,7 +52,7 @@ export function DualValueCell({ entered, rolledUp, isAggregate, isWoW, delta, co
       <span className="value-rollup">
         {fmt(rolledUp)}
       </span>
-      {showBar && <CoverageBar closed={coverage!.closed} open={coverage!.open} mlv={coverage!.total} label={coverage!.label} />}
+      {showBar && <CoverageBar closed={coverage!.closed} open={coverage!.open} likely={coverage!.likely ?? 0} mlv={coverage!.total} label={coverage!.label} />}
     </div>
   );
 }
@@ -67,13 +69,13 @@ function WoWBadge({ delta }: { delta: number }) {
   );
 }
 
-function CoverageBar({ closed, open, mlv, label }: { closed: number; open: number; mlv: number; label: string }) {
+function CoverageBar({ closed, open, likely, mlv, label }: { closed: number; open: number; likely: number; mlv: number; label: string }) {
   if (mlv <= 0) return null;
 
-  const { closedPct, openPct, totalPct, closedWidth, openWidth } = coverageParts(closed, open, mlv);
+  const { closedPct, openPct, likelyPct, totalPct, closedWidth, openWidth, likelyWidth } = coverageParts(closed, open, mlv, likely);
   const totalCoverage = Math.round(totalPct);
 
-  const tooltip = `Booked: ${formatCompact(closed)} (${Math.round(closedPct)}%)\nCommit: ${formatCompact(open)} (${Math.round(openPct)}%)\n${label}: ${formatCompact(mlv)}\nCoverage: ${totalCoverage}%`;
+  const tooltip = `Booked: ${formatCompact(closed)} (${Math.round(closedPct)}%)\nCommit: ${formatCompact(open)} (${Math.round(openPct)}%)${likely > 0 ? `\nMost Likely: ${formatCompact(likely)} (${Math.round(likelyPct)}%)` : ''}\n${label}: ${formatCompact(mlv)}\nCoverage: ${totalCoverage}%`;
 
   return (
     <div className="stacked-bar-container" title={tooltip}>
@@ -83,6 +85,9 @@ function CoverageBar({ closed, open, mlv, label }: { closed: number; open: numbe
         )}
         {openWidth > 0 && (
           <div className="bar-segment bar-open" style={{ width: `${openWidth}%` }} />
+        )}
+        {likelyWidth > 0 && (
+          <div className="bar-segment bar-likely" style={{ width: `${likelyWidth}%` }} />
         )}
       </div>
       <span className="progress-label">{totalCoverage}%</span>

@@ -60,13 +60,13 @@ export function TreeRow({ node, depth, measureColumns, isExpanded, onToggle, onR
   // Funnel value for a key: the subtree total on aggregate rows, the person's own otherwise
   const funnel = (key: string) => (isAggregate ? (node.rolledUp[key] ?? node.entered[key]) : node.entered[key]) ?? 0;
 
-  // Coverage bar (booked + commit against the forecast) for MLV and, when the monthly funnel
+  // Coverage bar (booked + commit + most likely against the forecast) for MLV and, when the monthly funnel
   // is mapped, M1-M3
   const coverageFor = (key: string, label: string): CoverageData | null => {
     const total = node.entered[key] ?? null;
     if (total == null || total <= 0) return null;
-    // MLV coverage: booked + commit
-    if (key === 'mlv') return { closed: funnel('closed'), open: funnel('commit'), total, label };
+    // MLV coverage: booked + commit + most likely
+    if (key === 'mlv') return { closed: funnel('closed'), open: funnel('commit'), likely: funnel('mostLikely'), total, label };
     const month = MONTH_FUNNEL[key];
     // Only when at least one monthly funnel column is mapped for this month
     if (!month) return null;

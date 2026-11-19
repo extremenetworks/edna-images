@@ -52,16 +52,19 @@ export function formatWoW(value: number | null | undefined): string {
  * (they can exceed 100%); the widths are scaled so the bar never overflows, splitting a
  * full bar in proportion when coverage is over 100%.
  */
-export function coverageParts(closed: number, open: number, total: number) {
+export function coverageParts(closed: number, open: number, total: number, likely = 0) {
   const closedPct = Math.max((closed / total) * 100, 0);
   const openPct = Math.max((open / total) * 100, 0);
-  const totalPct = closedPct + openPct;
+  const likelyPct = Math.max((likely / total) * 100, 0);
+  const totalPct = closedPct + openPct + likelyPct;
   const scale = totalPct > 100 ? 100 / totalPct : 1;
   return {
     closedPct,
     openPct,
+    likelyPct,
     totalPct,
     closedWidth: closedPct * scale,
     openWidth: openPct * scale,
+    likelyWidth: likelyPct * scale,
   };
 }

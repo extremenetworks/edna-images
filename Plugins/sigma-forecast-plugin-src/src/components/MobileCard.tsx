@@ -36,8 +36,9 @@ export function MobileCard({ node, depth, measureColumns, isExpanded, onToggle, 
   // Bar data
   const mlv = node.entered.mlv ?? null;
   const closed = isAggregate ? (node.rolledUp.closed ?? node.entered.closed ?? 0) : (node.entered.closed ?? 0);
-  // Coverage uses booked + commit
+  // Coverage uses booked + commit + most likely
   const openFunnel = isAggregate ? (node.rolledUp.commit ?? node.entered.commit ?? 0) : (node.entered.commit ?? 0);
+  const likelyFunnel = isAggregate ? (node.rolledUp.mostLikely ?? node.entered.mostLikely ?? 0) : (node.entered.mostLikely ?? 0);
 
   return (
     <div
@@ -87,7 +88,7 @@ export function MobileCard({ node, depth, measureColumns, isExpanded, onToggle, 
       {/* Coverage bar if MLV exists */}
       {mlv != null && mlv > 0 && (
         <div className="mobile-bar-row">
-          <MobileCoverageBar closed={closed} open={openFunnel} mlv={mlv} />
+          <MobileCoverageBar closed={closed} open={openFunnel} likely={likelyFunnel} mlv={mlv} />
         </div>
       )}
 
@@ -140,8 +141,8 @@ export function MobileCard({ node, depth, measureColumns, isExpanded, onToggle, 
   );
 }
 
-function MobileCoverageBar({ closed, open, mlv }: { closed: number; open: number; mlv: number }) {
-  const { closedPct, openPct, totalPct, closedWidth, openWidth } = coverageParts(closed, open, mlv);
+function MobileCoverageBar({ closed, open, likely, mlv }: { closed: number; open: number; likely: number; mlv: number }) {
+  const { closedPct, openPct, likelyPct, totalPct, closedWidth, openWidth, likelyWidth } = coverageParts(closed, open, mlv, likely);
   const totalCoverage = Math.round(totalPct);
 
   return (
@@ -149,10 +150,12 @@ function MobileCoverageBar({ closed, open, mlv }: { closed: number; open: number
       <div className="mobile-coverage-bar">
         {closedWidth > 0 && <div className="bar-segment bar-booked" style={{ width: `${closedWidth}%` }} />}
         {openWidth > 0 && <div className="bar-segment bar-open" style={{ width: `${openWidth}%` }} />}
+        {likelyWidth > 0 && <div className="bar-segment bar-likely" style={{ width: `${likelyWidth}%` }} />}
       </div>
       <div className="mobile-coverage-labels">
         <span className="coverage-label"><span className="dot-booked" /> {Math.round(closedPct)}% booked</span>
         <span className="coverage-label"><span className="dot-open" /> {Math.round(openPct)}% commit</span>
+        {likely > 0 && <span className="coverage-label"><span className="dot-likely" /> {Math.round(likelyPct)}% most likely</span>}
         <span className="coverage-label coverage-total">{totalCoverage}% coverage</span>
       </div>
     </div>
