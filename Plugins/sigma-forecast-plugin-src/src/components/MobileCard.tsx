@@ -129,6 +129,9 @@ export function MobileCard({ node, depth, measureColumns, isExpanded, onToggle, 
                     </span>
                   )}
                 </span>
+                {['commit', 'mostLikely', 'bestCase', 'pipeline'].includes(mc.key) && entered !== null && mlv ? (
+                  <span className="value-subtitle">{Math.round((entered / mlv) * 100)}% of MLV</span>
+                ) : null}
                 {isAggregate && rolledUp !== null && (
                   <span className="mobile-metric-rollup">{fmt(rolledUp)}</span>
                 )}

@@ -20,9 +20,11 @@ interface Props {
   /** Change since the previous week, shown as an arrow */
   delta: number | null;
   coverage: CoverageData | null;
+  /** Share of quarter MLV, shown as a subtitle (forecast categories) */
+  pctOfMlv?: number | null;
 }
 
-export function DualValueCell({ entered, rolledUp, isAggregate, isWoW, delta, coverage }: Props) {
+export function DualValueCell({ entered, rolledUp, isAggregate, isWoW, delta, coverage, pctOfMlv }: Props) {
   if (entered === null && rolledUp === null) {
     return <span className="value-dash">-</span>;
   }
@@ -38,6 +40,7 @@ export function DualValueCell({ entered, rolledUp, isAggregate, isWoW, delta, co
           {fmt(entered)}
           {showDelta && <WoWBadge delta={delta!} />}
         </span>
+        {pctOfMlv != null && isFinite(pctOfMlv) && <span className="value-subtitle">{Math.round(pctOfMlv)}% of MLV</span>}
         {showBar && <CoverageBar closed={coverage!.closed} open={coverage!.open} likely={coverage!.likely ?? 0} mlv={coverage!.total} label={coverage!.label} />}
       </div>
     );
@@ -75,7 +78,11 @@ function CoverageBar({ closed, open, likely, mlv, label }: { closed: number; ope
   const { closedPct, openPct, likelyPct, totalPct, closedWidth, openWidth, likelyWidth } = coverageParts(closed, open, mlv, likely);
   const totalCoverage = Math.round(totalPct);
 
-  const tooltip = `Booked: ${formatCompact(closed)} (${Math.round(closedPct)}%)\nCommit: ${formatCompact(open)} (${Math.round(openPct)}%)${likely > 0 ? `\nMost Likely: ${formatCompact(likely)} (${Math.round(likelyPct)}%)` : ''}\n${label}: ${formatCompact(mlv)}\nCoverage: ${totalCoverage}%`;
+  const gapDollars = closed + open + likely - mlv;
+  const gapPct = Math.round(totalPct - 100);
+  const sign = (v: number) => (v > 0 ? '+' : v < 0 ? '-' : '');
+  const gapLabel = `${sign(gapDollars)}${formatCompact(Math.abs(gapDollars))} · ${sign(gapPct)}${Math.abs(gapPct)}%`;
+  const tooltip = `Closed: ${formatCompact(closed)} (${Math.round(closedPct)}%)\nCommit: ${formatCompact(open)} (${Math.round(openPct)}%)${likely > 0 ? `\nMost Likely: ${formatCompact(likely)} (${Math.round(likelyPct)}%)` : ''}\n${label}: ${formatCompact(mlv)}\nCoverage: ${totalCoverage}%\n${gapDollars >= 0 ? 'Above' : 'Below'} forecast: ${gapLabel}`;
 
   return (
     <div className="stacked-bar-container" title={tooltip}>
@@ -90,7 +97,7 @@ function CoverageBar({ closed, open, likely, mlv, label }: { closed: number; ope
           <div className="bar-segment bar-likely" style={{ width: `${likelyWidth}%` }} />
         )}
       </div>
-      <span className="progress-label">{totalCoverage}%</span>
+      <span className={`progress-label ${gapDollars >= 0 ? 'gap-above' : 'gap-below'}`}>{gapLabel}</span>
     </div>
   );
 }

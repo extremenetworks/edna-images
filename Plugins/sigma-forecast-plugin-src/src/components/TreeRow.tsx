@@ -7,6 +7,14 @@ import type { CoverageData } from './DualValueCell';
 const FUNNEL_KEYS = new Set(['closed', 'open', 'mspFunnel', 'commit', 'mostLikely', 'bestCase', 'pipeline', 'closedLastWk', 'currentWk', 'closingNextWk']);
 
 // Measures that show a change-since-last-week arrow (value minus its Prev Wk column)
+const CATEGORY_KEYS = new Set(['commit', 'mostLikely', 'bestCase', 'pipeline']);
+
+function pctOfMlv(node: { entered: Record<string, number | null | undefined> }, key: string, value: number | null): number | null {
+  const mlv = node.entered.mlv;
+  if (!CATEGORY_KEYS.has(key) || value == null || !mlv) return null;
+  return (value / mlv) * 100;
+}
+
 const DELTA_KEYS = new Set(['low', 'mlv', 'high', 'msp', 'm1', 'm2', 'm3']);
 
 // Monthly funnel keys behind each month's coverage bar
@@ -151,6 +159,7 @@ export function TreeRow({ node, depth, measureColumns, isExpanded, onToggle, onR
             isWoW={mc.key === 'mlvWoW'}
             delta={DELTA_KEYS.has(mc.key) ? (node.entered[`${mc.key}WoW`] ?? null) : null}
             coverage={coverageFor(mc.key, mc.label)}
+            pctOfMlv={pctOfMlv(node, mc.key, FUNNEL_KEYS.has(mc.key) && isAggregate ? (node.rolledUp[mc.key] ?? null) : (node.entered[mc.key] ?? null))}
           />
         </td>
       ))}
